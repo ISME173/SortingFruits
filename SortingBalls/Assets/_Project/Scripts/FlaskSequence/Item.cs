@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace _Project.Scripts.FruitsSequence
+namespace _Project.Scripts.FlaskSequence
 {
     public class Item : MonoBehaviour
     {

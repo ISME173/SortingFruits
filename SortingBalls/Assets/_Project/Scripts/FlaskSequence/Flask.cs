@@ -3,32 +3,39 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace _Project.Scripts.FruitsSequence
+namespace _Project.Scripts.FlaskSequence
 {
     [RequireComponent(typeof(Collider2D))]
-    public class Frink : MonoBehaviour
+    public class Flask : MonoBehaviour
     {
+        [SerializeField] private Transform _slotForSelectItems;
         [SerializeField] private List<ItemSlot> _itemSlots = new List<ItemSlot>();
+
+        public Transform SlotForSelectItems => _slotForSelectItems;
 
         public bool TryAddItem(Item item)
         {
-            if (_itemSlots[0].Item != null)
+            ItemSlot slot = _itemSlots.FirstOrDefault(x => x.Item == null);
+
+            if (slot != null)
             {
-                return false;
+                slot.Item = item;
+                return true;
             }
 
-            _itemSlots[0].Item = item;
-
-            return true;
+            return false;
         }
 
         public Item GetFirstItem()
         {
             ItemSlot slot = _itemSlots.FirstOrDefault(slot => slot.Item != null);
-            Item itemForReturn = slot == null ? null : slot.Item;
+            Item itemForReturn = null;
 
             if (slot != null)
+            {
+                itemForReturn = slot.Item;
                 slot.Item = null;
+            }
 
             return itemForReturn;
         }
@@ -48,7 +55,7 @@ namespace _Project.Scripts.FruitsSequence
         [Serializable]
         public class ItemSlot
         {
-            [HideInInspector] public Item Item;
+            public Item Item;
 
             [SerializeField] private Transform _slotTransform;
 

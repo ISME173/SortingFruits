@@ -2,21 +2,21 @@ using _Project.Scripts.FruitsSequence.Input;
 using Reflex.Core;
 using UnityEngine;
 
-namespace _Project.Scripts.FruitsSequence
+namespace _Project.Scripts.FlaskSequence
 {
-    public class FrinksSequenceInstaller : MonoBehaviour, IInstaller
+    public class FlaskSequenceInstaller : MonoBehaviour, IInstaller
     {
         [Header("References")]
         [SerializeField] private Camera _mainCamera;
 
         [Header("Settings")]
-        [SerializeField] private FrinkItemsMover.MovingSettings _movingSettings;
+        [SerializeField] private FlaskItemsMover.MovingSettings _movingSettings;
 
         [Header("Input assets")]
         [SerializeField] private DesktopInput _desktopInputPrefab;
         [SerializeField] private MobileInput _mobileInputPrefab;
 
-        private FrinkItemsMover _frinkItemsMover;
+        private FlaskItemsMover _frinkItemsMover;
 
         private void OnDestroy()
         {
@@ -50,7 +50,7 @@ namespace _Project.Scripts.FruitsSequence
                 Debug.LogError("Invalid device type! Supported only mobile and desktop");
             }
 
-            _frinkItemsMover = new FrinkItemsMover(_mainCamera, _movingSettings, input);
+            _frinkItemsMover = new FlaskItemsMover(_mainCamera, _movingSettings, input);
 
             containerBuilder.AddSingleton(_frinkItemsMover);
         }
