@@ -12,6 +12,7 @@ namespace _Project.Scripts.FlaskSequence
         [SerializeField] private List<ItemSlot> _itemSlots = new List<ItemSlot>();
 
         public Transform SlotForSelectItems => _slotForSelectItems;
+        public int FreeSlotsCount => _itemSlots.Where(slot => slot.Item == null).Count();
 
         public bool TryAddItem(Item item)
         {
@@ -28,7 +29,7 @@ namespace _Project.Scripts.FlaskSequence
 
         public Item GetFirstItem()
         {
-            ItemSlot slot = _itemSlots.FirstOrDefault(slot => slot.Item != null);
+            ItemSlot slot = _itemSlots.LastOrDefault(slot => slot.Item != null);
             Item itemForReturn = null;
 
             if (slot != null)
@@ -42,7 +43,7 @@ namespace _Project.Scripts.FlaskSequence
 
         public Item PeekFirstItem()
         {
-            ItemSlot slot = _itemSlots.FirstOrDefault(slot => slot.Item != null);
+            ItemSlot slot = _itemSlots.LastOrDefault(slot => slot.Item != null);
             return slot == null ? null : slot.Item;
         }
 

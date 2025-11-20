@@ -9,13 +9,14 @@ namespace _Project.Scripts.FlaskSequence
 {
     public class FlaskItemsMover : IDisposable
     {
-        private readonly List<Flask> UsingFilling = new List<Flask>();
+        private readonly Dictionary<Flask, MotionHandle> MovingFlasks = new Dictionary<Flask, MotionHandle>();
+        private readonly HashSet<Flask> UsingFilling = new HashSet<Flask>();
         private readonly Camera CurrentCamera;
         private readonly MovingSettings MoveSettings;
         private readonly IInput CurrentInput;
         private readonly float FrinkUpYPosition;
 
-        private Flask _currentFrink;
+        private Flask _currentFlask;
         private MotionHandle _moveUpFrinkHandle;
         private MotionHandle _moveDownFrinkHandle;
 
@@ -27,135 +28,187 @@ namespace _Project.Scripts.FlaskSequence
 
             FrinkUpYPosition = MoveSettings.StartYFrinksPositions + MoveSettings.MoveYOffsetInSelected;
 
-            CurrentInput.OnTriggerDown += SearchFrink;
+            CurrentInput.OnTriggerDown += SearchFlask;
         }
 
-        private void SearchFrink(Vector3 screenPosition)
+        private void SearchFlask(Vector3 screenPosition)
         {
             Ray ray = CurrentCamera.ScreenPointToRay(screenPosition);
             RaycastHit2D hit2D = Physics2D.GetRayIntersection(ray, Mathf.Infinity);
 
-            if (hit2D.collider == null)
+            if (hit2D.collider != null && hit2D.collider.TryGetComponent(out Flask flask))
             {
-                MoveDownFrink(_currentFrink);
-                _currentFrink = null;
-                return;
-            }
+                if (UsingFilling.Contains(flask))
+                    return;
 
-            if (hit2D.collider.TryGetComponent(out Flask frink))
-            {
-                if (_currentFrink == null)
+                if (_currentFlask == null)
                 {
-                    _currentFrink = frink;
-
-                    _moveUpFrinkHandle.TryCancel();
-                    MoveUpFrink(_currentFrink);
+                    _currentFlask = flask;
+                    MoveUpFlask(_currentFlask);
+                    return;
                 }
-                else if (_currentFrink != frink)
+                else if (_currentFlask != flask)
                 {
-                    _moveDownFrinkHandle.TryCancel();
-                    MoveDownFrink(_currentFrink);
-
-                    if (_currentFrink.PeekFirstItem() == null)
+                    if (TryMoveItems(_currentFlask, flask))
                     {
-                        MoveUpFrink(frink);
-                    }
-                    else
-                    {
-                        TryMoveItems(_currentFrink, frink);
+                        MoveDownFlask(_currentFlask);
+                        _currentFlask = null;
+                        return;
                     }
                 }
-
-                _currentFrink = frink;
             }
+
+            if (_currentFlask != null)
+                MoveDownFlask(_currentFlask);
+
+            _currentFlask = null;
         }
 
-        private void TryMoveItems(Flask startFrink, Flask endFrink)
+        private bool TryMoveItems(Flask startFlask, Flask endFlask)
         {
-            if (UsingFilling.Contains(startFrink) || UsingFilling.Contains(endFrink))
+            if (startFlask.PeekFirstItem() == null)
+                return false;
+
+            if (endFlask.PeekFirstItem() != null)
+                return false;
+
+            string moveItemName = startFlask.PeekFirstItem().ItemName;
+
+            Item firstItemInEndFlask = endFlask.PeekFirstItem();
+            string firstItemNameInEndFlask = firstItemInEndFlask != null ? firstItemInEndFlask.ItemName : string.Empty;
+
+            if (firstItemNameInEndFlask != string.Empty && moveItemName != firstItemNameInEndFlask)
+                return false;
+
+            List<Item> itemsToMove = new List<Item>();
+            int maxItemsToMove = endFlask.FreeSlotsCount;
+
+            UsingFilling.Add(endFlask);
+
+            while (maxItemsToMove > 0)
             {
-                return;
+                Item peekFirstItem = startFlask.PeekFirstItem();
+                if (peekFirstItem == null)
+                    break;
+
+                if (peekFirstItem.ItemName != firstItemNameInEndFlask && firstItemNameInEndFlask != string.Empty)
+                    break;
+
+                itemsToMove.Add(startFlask.GetFirstItem());
+                maxItemsToMove--;
             }
 
-            List<Item> itemsForMove = new List<Item>();
-
-            while (startFrink.PeekFirstItem() != null)
+            for (int i = 0; i < itemsToMove.Count; i++)
             {
-                itemsForMove.Add(startFrink.GetFirstItem());
-            }
-
-            if (itemsForMove.Count > 0)
-            {
-                UsingFilling.Add(endFrink);
-                UsingFilling.Add(startFrink);
-            }
-
-            MotionSequenceBuilder moveItemsSequence = LSequence.Create();
-
-            for (int i = 0; i < itemsForMove.Count; i++)
-            {
-                startFrink.GetFirstItem();
-
-                Item itemForMove = itemsForMove[i];
-
-                float moveTimeInOneMotion = MoveSettings.ItemsMoveTime / 3;
-
-                itemForMove.transform.SetParent(startFrink.SlotForSelectItems);
-                moveItemsSequence.Append(LMotion.Create(itemForMove.transform.localPosition, Vector3.zero, moveTimeInOneMotion)
-                    .WithEase(MoveSettings.ItemsMoveEase)
-                    .WithOnComplete(() => itemForMove.transform.SetParent(endFrink.SlotForSelectItems))
-                    .BindToLocalPosition(itemForMove.transform));
-
-                moveItemsSequence.Append(LMotion.Create(itemForMove.transform.localPosition, Vector3.zero, moveTimeInOneMotion)
-                    .WithEase(MoveSettings.ItemsMoveEase)
-                    .WithOnComplete(() =>
+                if (i == itemsToMove.Count - 1)
+                {
+                    MoveOneItem(itemsToMove[i], () =>
                     {
-                        itemForMove.transform.SetParent(endFrink.GetFirstEmptySlotTransform());
-                        endFrink.TryAddItem(itemForMove);
-                    })
-                    .BindToLocalPosition(itemForMove.transform));
+                        UsingFilling.Remove(endFlask);
+                    });
+                }
+                else
+                {
+                    MoveOneItem(itemsToMove[i], null);
+                }
 
-                moveItemsSequence.Append(LMotion.Create(itemForMove.transform.localPosition, Vector3.zero, moveTimeInOneMotion)
-                    .WithEase(MoveSettings.ItemsMoveEase)
-                    .WithOnComplete(() =>
-                    {
-                        if (i == itemsForMove.Count - 1)
+                endFlask.TryAddItem(itemsToMove[i]);
+            }
+
+            return true;
+
+            void MoveOneItem(Item item, Action callback)
+            {
+                // Точки пути в мировых координатах
+                Transform firstEmptySlot = endFlask.GetFirstEmptySlotTransform();
+                Vector3 p0 = item.transform.position;
+                Vector3 p1 = startFlask.SlotForSelectItems.position;
+                Vector3 p2 = endFlask.SlotForSelectItems.position;
+                Vector3 p3 = firstEmptySlot.position;
+
+                // Для корректного порядка отрисовки переносим в "слот выбора", сохраняя мировую позицию
+                item.transform.SetParent(startFlask.SlotForSelectItems.transform, false);
+
+                MotionSequenceBuilder moveItemSequence = LSequence.Create();
+
+                moveItemSequence
+                    .Append(LMotion.Create(p0, p1, MoveSettings.ItemsMoveTime)
+                        .WithEase(MoveSettings.ItemsMoveEase)
+                        .WithCancelOnError()
+                        .BindToPosition(item.transform))
+                    .Append(LMotion.Create(p1, p2, MoveSettings.ItemsMoveTime)
+                        .WithEase(MoveSettings.ItemsMoveEase)
+                        .WithCancelOnError()
+                        .BindToPosition(item.transform))
+                    .Append(LMotion.Create(p2, p3, MoveSettings.ItemsMoveTime)
+                        .WithEase(MoveSettings.ItemsMoveEase)
+                        .WithCancelOnError()
+                        .WithOnComplete(() =>
                         {
-                            UsingFilling.Remove(endFrink);
-                            UsingFilling.Remove(startFrink);
-                        }
-                    })
-                    .BindToLocalPosition(itemForMove.transform));
-            }
+                            // В конце привязываем к целевой ячейке без скачков
+                            item.transform.SetParent(firstEmptySlot, true);
+                            //item.transform.localPosition = Vector3.zero;
 
-            moveItemsSequence.Run();
-        }
+                            if (callback != null)
+                                callback();
+                        })
+                        .BindToPosition(item.transform));
 
-        private void MoveUpFrink(Flask frink)
-        {
-            if (frink != null)
-            {
-                _moveUpFrinkHandle = LMotion.Create(frink.transform.localPosition, new Vector3(frink.transform.localPosition.x, FrinkUpYPosition, 0), MoveSettings.FrinkMoveTime)
-                  .WithEase(MoveSettings.FrinkMoveEase)
-                  .WithCancelOnError()
-                  .BindToLocalPosition(frink.transform);
+                moveItemSequence.Run();
             }
         }
 
-        private void MoveDownFrink(Flask frink)
+        private void MoveUpFlask(Flask flask)
         {
-            if (frink != null)
+            if (flask != null)
             {
-                _moveDownFrinkHandle = _moveDownFrinkHandle = LMotion.Create(frink.transform.localPosition, new Vector3(frink.transform.localPosition.x, MoveSettings.StartYFrinksPositions, 0), MoveSettings.FrinkMoveTime)
+                if (MovingFlasks.TryGetValue(flask, out MotionHandle motionHandle))
+                {
+                    motionHandle.TryCancel();
+                    MovingFlasks.Remove(flask);
+                }
+
+                _moveUpFrinkHandle = LMotion.Create(flask.transform.localPosition, new Vector3(flask.transform.localPosition.x, FrinkUpYPosition, 0), MoveSettings.FrinkMoveTime)
                   .WithEase(MoveSettings.FrinkMoveEase)
                   .WithCancelOnError()
-                  .BindToLocalPosition(frink.transform);
+                  .WithOnComplete(() =>
+                  {
+                      if (MovingFlasks.ContainsKey(flask))
+                          MovingFlasks.Remove(flask);
+                  })
+                  .BindToLocalPosition(flask.transform);
+
+                MovingFlasks.Add(flask, _moveUpFrinkHandle);
+            }
+        }
+
+        private void MoveDownFlask(Flask flask)
+        {
+            if (flask != null)
+            {
+                if (MovingFlasks.TryGetValue(flask, out MotionHandle motionHandle))
+                {
+                    motionHandle.TryCancel();
+                    MovingFlasks.Remove(flask);
+                }
+
+                _moveDownFrinkHandle = LMotion.Create(flask.transform.localPosition, new Vector3(flask.transform.localPosition.x, MoveSettings.StartYFrinksPositions, 0), MoveSettings.FrinkMoveTime)
+                  .WithEase(MoveSettings.FrinkMoveEase)
+                  .WithCancelOnError()
+                  .WithOnComplete(() =>
+                  {
+                      if (MovingFlasks.ContainsKey(flask))
+                          MovingFlasks.Remove(flask);
+                  })
+                  .BindToLocalPosition(flask.transform);
+
+                MovingFlasks.Add(flask, _moveDownFrinkHandle);
             }
         }
 
         public void Dispose()
         {
-            CurrentInput.OnTriggerDown -= SearchFrink;
+            CurrentInput.OnTriggerDown -= SearchFlask;
         }
 
         [Serializable]
@@ -165,7 +218,7 @@ namespace _Project.Scripts.FlaskSequence
             [SerializeField, Min(0)] private float _itemsMoveTime;
             [SerializeField] private Ease _itemsMoveEase;
 
-            [Header("Move frink")]
+            [Header("Move flask")]
             [SerializeField, Min(0)] private float _frinkMoveTime;
             [SerializeField] private Ease _frinkMoveEase;
             [SerializeField] private float _moveYOffsetInSelected;
