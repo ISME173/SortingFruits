@@ -128,6 +128,7 @@ namespace _Project.Scripts.FlaskSequence
 
                 // ƒл€ корректного пор€дка отрисовки переносим в "слот выбора", сохран€€ мировую позицию
                 item.transform.SetParent(startFlask.SlotForSelectItems.transform, false);
+                item.transform.localScale = Vector3.one;
 
                 MotionSequenceBuilder moveItemSequence = LSequence.Create();
 
@@ -147,6 +148,8 @@ namespace _Project.Scripts.FlaskSequence
                         {
                             // ¬ конце прив€зываем к целевой €чейке без скачков
                             item.transform.SetParent(firstEmptySlot, true);
+                            item.transform.localScale = Vector3.one;
+
                             //item.transform.localPosition = Vector3.zero;
 
                             if (callback != null)

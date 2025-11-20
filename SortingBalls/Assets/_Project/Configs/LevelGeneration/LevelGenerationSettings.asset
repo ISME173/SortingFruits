@@ -19,9 +19,9 @@ MonoBehaviour:
   FlaskCapacity: 4
   LevelsPerFruitIncrease: 3
   LevelsPerExtraEmptyFlaskIncrease: 7
-  MinShuffleMoves: 12
-  MaxShuffleMoves: 40
-  AdditionalMovesPerLevel: 1
+  MinSolutionMoves: 8
+  MaxSolverStates: 250000
+  UseSolverValidation: 1
   MaxGenerationAttemptsPerLevel: 30
   AvailableFruitNames:
   - Apple
@@ -30,4 +30,28 @@ MonoBehaviour:
   - Pear
   - Grape
   AvoidAlmostSolved: 1
-  RemoveSolvedFlasksInStart: 1
+  BreakSolvedFlasks: 1
+  GeneratedLevelKeys:
+  - Level_1
+  - Level_2
+  - Level_3
+  - Level_4
+  - Level_5
+  - Level_6
+  - Level_7
+  - Level_8
+  - Level_9
+  - Level_10
+  - Level_11
+  - Level_12
+  - Level_13
+  - Level_14
+  - Level_15
+  - Level_16
+  - Level_17
+  - Level_18
+  - Level_19
+  - Level_20
+  - Level_21
+  - Level_22
+  - Level_23

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace _Project.Scripts.FlaskSequence.Editor
+namespace _Project.Scripts.FlaskSequence
 {
     [CreateAssetMenu(fileName = "LevelGenerationSettings", menuName = "Levels/LevelGenerationSettings")]
     public class LevelGenerationSettings : ScriptableObject
@@ -45,10 +45,11 @@ namespace _Project.Scripts.FlaskSequence.Editor
         };
 
         [Header("Проверки качества")]
-        [Tooltip("Запретить генерацию если старт почти решён (<=1 незавершённая колба).")]
         public bool AvoidAlmostSolved = true;
-
-        [Tooltip("Убирать полностью собранные колбы в старте (делать swap для разрушения).")]
         public bool BreakSolvedFlasks = true;
+
+        [Header("Addressables")]
+        [Tooltip("Список ключей Addressables для сгенерированных уровней (например: Level_1, Level_2). Заполняется генератором.")]
+        public List<string> GeneratedLevelKeys = new List<string>();
     }
 }
