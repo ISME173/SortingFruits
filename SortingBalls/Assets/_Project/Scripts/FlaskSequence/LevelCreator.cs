@@ -13,6 +13,7 @@ namespace _Project.Scripts.FlaskSequence
     public class LevelCreator : MonoBehaviour
     {
         private readonly List<LevelData> AllLevels = new List<LevelData>();
+        private readonly List<Flask> SpawnedFlasks = new List<Flask>();
 
         [Header("References")]
         [SerializeField] private Flask _flaskPrefab;
@@ -26,12 +27,14 @@ namespace _Project.Scripts.FlaskSequence
         [SerializeField] private LevelGenerationSettings _generationSettings;
 
         private ISaves _saves;
-        private readonly List<Flask> _spawnedFlasks = new List<Flask>();
+        private int _currentLevelIndex = -1;
+        private bool _allLevelsLoaded = false;
 
         public event Action<LevelData> LevelCreated;
 
-        private int _currentLevelIndex = -1;
-        private bool _allLevelsLoaded = false;
+        public int CurrentLevelIndex => _currentLevelIndex;
+        public int LevelsCount => AllLevels.Count;
+
 
         private async void Awake()
         {
@@ -188,9 +191,6 @@ namespace _Project.Scripts.FlaskSequence
             CreateLevelView(AllLevels[_currentLevelIndex]);
         }
 
-        public int CurrentLevelIndex => _currentLevelIndex;
-        public int LevelsCount => AllLevels.Count;
-
         #endregion
 
         /// <summary>
@@ -242,7 +242,7 @@ namespace _Project.Scripts.FlaskSequence
                     Vector3 spawnPos = new Vector3(x, y, basePos.z);
 
                     Flask flaskInstance = Instantiate(_flaskPrefab, spawnPos, Quaternion.identity, _startCreateFlasksPoint.parent);
-                    _spawnedFlasks.Add(flaskInstance);
+                    SpawnedFlasks.Add(flaskInstance);
 
                     List<string> fruitsInFlask = levelData.Flasks[flaskIndex];
                     if (fruitsInFlask == null || fruitsInFlask.Count == 0)
@@ -287,15 +287,15 @@ namespace _Project.Scripts.FlaskSequence
 
         private void ClearCurrentLevelView()
         {
-            if (_spawnedFlasks.Count == 0) return;
+            if (SpawnedFlasks.Count == 0) return;
 
-            for (int i = 0; i < _spawnedFlasks.Count; i++)
+            for (int i = 0; i < SpawnedFlasks.Count; i++)
             {
-                Flask flask = _spawnedFlasks[i];
+                Flask flask = SpawnedFlasks[i];
                 if (flask != null)
                     Destroy(flask.gameObject);
             }
-            _spawnedFlasks.Clear();
+            SpawnedFlasks.Clear();
         }
 
         private Item FindItemPrefab(string fruitName)

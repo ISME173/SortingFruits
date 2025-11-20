@@ -205,7 +205,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &143332927
 Transform:
@@ -482,7 +482,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!212 &1025397286
 SpriteRenderer:
@@ -612,6 +612,7 @@ MonoBehaviour:
   _movingSettings:
     _itemsMoveTime: 0.3
     _itemsMoveEase: 5
+    _millisecondsDelayBetweenMoveItems: 80
     _frinkMoveTime: 0.3
     _frinkMoveEase: 5
     _moveYOffsetInSelected: 1
@@ -631,7 +632,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &1700269445
 Transform:

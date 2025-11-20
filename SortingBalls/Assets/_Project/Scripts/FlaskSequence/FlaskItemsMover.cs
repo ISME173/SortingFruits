@@ -3,6 +3,7 @@ using LitMotion;
 using LitMotion.Extensions;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace _Project.Scripts.FlaskSequence
@@ -100,24 +101,31 @@ namespace _Project.Scripts.FlaskSequence
                 maxItemsToMove--;
             }
 
-            for (int i = 0; i < itemsToMove.Count; i++)
-            {
-                if (i == itemsToMove.Count - 1)
-                {
-                    MoveOneItem(itemsToMove[i], () =>
-                    {
-                        UsingFilling.Remove(endFlask);
-                    });
-                }
-                else
-                {
-                    MoveOneItem(itemsToMove[i], null);
-                }
-
-                endFlask.TryAddItem(itemsToMove[i]);
-            }
+            MoveAllItems();
 
             return true;
+
+            async void MoveAllItems()
+            {
+                for (int i = 0; i < itemsToMove.Count; i++)
+                {
+                    if (i == itemsToMove.Count - 1)
+                    {
+                        MoveOneItem(itemsToMove[i], () =>
+                        {
+                            UsingFilling.Remove(endFlask);
+                        });
+                    }
+                    else
+                    {
+                        MoveOneItem(itemsToMove[i], null);
+                    }
+
+                    endFlask.TryAddItem(itemsToMove[i]);
+
+                    await Task.Delay(MoveSettings.MillisecondsDelayBetweenMoveItems);
+                }
+            }
 
             void MoveOneItem(Item item, Action callback)
             {
@@ -235,6 +243,7 @@ namespace _Project.Scripts.FlaskSequence
             [Header("Move items")]
             [SerializeField, Min(0)] private float _itemsMoveTime;
             [SerializeField] private Ease _itemsMoveEase;
+            [SerializeField, Min(0)] private int _millisecondsDelayBetweenMoveItems;
 
             [Header("Move flask")]
             [SerializeField, Min(0)] private float _frinkMoveTime;
@@ -247,6 +256,7 @@ namespace _Project.Scripts.FlaskSequence
             public float FrinkMoveTime => _frinkMoveTime;
             public Ease FrinkMoveEase => _frinkMoveEase;
             public float MoveYOffsetInSelected => _moveYOffsetInSelected;
+            public int MillisecondsDelayBetweenMoveItems => _millisecondsDelayBetweenMoveItems;
         }
     }
 }
