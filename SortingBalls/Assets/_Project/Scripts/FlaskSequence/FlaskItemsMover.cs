@@ -14,7 +14,6 @@ namespace _Project.Scripts.FlaskSequence
         private readonly Camera CurrentCamera;
         private readonly MovingSettings MoveSettings;
         private readonly IInput CurrentInput;
-        private readonly float FrinkUpYPosition;
 
         private Flask _currentFlask;
         private MotionHandle _moveUpFrinkHandle;
@@ -25,8 +24,6 @@ namespace _Project.Scripts.FlaskSequence
             CurrentCamera = mainCamera;
             MoveSettings = movingSettings;
             CurrentInput = input;
-
-            FrinkUpYPosition = MoveSettings.StartYFrinksPositions + MoveSettings.MoveYOffsetInSelected;
 
             CurrentInput.OnTriggerDown += SearchFlask;
         }
@@ -69,7 +66,7 @@ namespace _Project.Scripts.FlaskSequence
             if (startFlask.PeekFirstItem() == null)
                 return false;
 
-            if (endFlask.PeekFirstItem() != null)
+            if (endFlask.FreeSlotsCount == 0)
                 return false;
 
             string moveItemName = startFlask.PeekFirstItem().ItemName;
@@ -94,7 +91,10 @@ namespace _Project.Scripts.FlaskSequence
                 if (peekFirstItem.ItemName != firstItemNameInEndFlask && firstItemNameInEndFlask != string.Empty)
                     break;
 
-                itemsToMove.Add(startFlask.GetFirstItem());
+                Item firstItemInStartFlask = startFlask.GetFirstItem();
+                itemsToMove.Add(firstItemInStartFlask);
+                firstItemNameInEndFlask = firstItemInStartFlask.ItemName;
+
                 maxItemsToMove--;
             }
 
@@ -126,9 +126,10 @@ namespace _Project.Scripts.FlaskSequence
                 Vector3 p2 = endFlask.SlotForSelectItems.position;
                 Vector3 p3 = firstEmptySlot.position;
 
-                // Для корректного порядка отрисовки переносим в "слот выбора", сохраняя мировую позицию
-                item.transform.SetParent(startFlask.SlotForSelectItems.transform, false);
-                item.transform.localScale = Vector3.one;
+                // ВАЖНО: сохраняем мировые координаты и масштаб при смене родителя,
+                // чтобы не унаследовать scale от родителя (который может быть != 1)
+                item.transform.SetParent(startFlask.SlotForSelectItems.transform, true); // was: false
+                // Не трогаем localScale вручную — так Unity скомпенсирует масштаб родителя, сохранив world scale
 
                 MotionSequenceBuilder moveItemSequence = LSequence.Create();
 
@@ -142,18 +143,20 @@ namespace _Project.Scripts.FlaskSequence
                         .WithCancelOnError()
                         .BindToPosition(item.transform))
                     .Append(LMotion.Create(p2, p3, MoveSettings.ItemsMoveTime)
-                        .WithEase(MoveSettings.ItemsMoveEase)
+                        .WithEase(Ease.OutBounce)
                         .WithCancelOnError()
                         .WithOnComplete(() =>
                         {
-                            // В конце привязываем к целевой ячейке без скачков
-                            item.transform.SetParent(firstEmptySlot, true);
-                            item.transform.localScale = Vector3.one;
+                            // Финальная привязка к целевой ячейке с сохранением world-параметров
+                            item.transform.SetParent(firstEmptySlot, true); // сохраняем world position/rotation/scale
+                            // На всякий случай зафиксируем позицию в точке слота
+                            item.transform.position = p3;
 
-                            //item.transform.localPosition = Vector3.zero;
+                            // Если принципиально иметь zero localPosition у item внутри слота,
+                            // можно раскомментировать строку ниже — при масштабируемом родителе это не меняет world scale.
+                            // item.transform.localPosition = Vector3.zero;
 
-                            if (callback != null)
-                                callback();
+                            callback?.Invoke();
                         })
                         .BindToPosition(item.transform));
 
@@ -171,7 +174,7 @@ namespace _Project.Scripts.FlaskSequence
                     MovingFlasks.Remove(flask);
                 }
 
-                _moveUpFrinkHandle = LMotion.Create(flask.transform.localPosition, new Vector3(flask.transform.localPosition.x, FrinkUpYPosition, 0), MoveSettings.FrinkMoveTime)
+                _moveUpFrinkHandle = LMotion.Create(flask.transform.localPosition, new Vector3(flask.transform.localPosition.x, flask.transform.localPosition.y + MoveSettings.MoveYOffsetInSelected, 0), MoveSettings.FrinkMoveTime)
                   .WithEase(MoveSettings.FrinkMoveEase)
                   .WithCancelOnError()
                   .WithOnComplete(() =>
@@ -195,7 +198,7 @@ namespace _Project.Scripts.FlaskSequence
                     MovingFlasks.Remove(flask);
                 }
 
-                _moveDownFrinkHandle = LMotion.Create(flask.transform.localPosition, new Vector3(flask.transform.localPosition.x, MoveSettings.StartYFrinksPositions, 0), MoveSettings.FrinkMoveTime)
+                _moveDownFrinkHandle = LMotion.Create(flask.transform.localPosition, new Vector3(flask.transform.localPosition.x, flask.transform.localPosition.y - MoveSettings.MoveYOffsetInSelected, 0), MoveSettings.FrinkMoveTime)
                   .WithEase(MoveSettings.FrinkMoveEase)
                   .WithCancelOnError()
                   .WithOnComplete(() =>
@@ -225,7 +228,6 @@ namespace _Project.Scripts.FlaskSequence
             [SerializeField, Min(0)] private float _frinkMoveTime;
             [SerializeField] private Ease _frinkMoveEase;
             [SerializeField] private float _moveYOffsetInSelected;
-            [SerializeField] private float _startYFrinksPositions;
 
             public float ItemsMoveTime => _itemsMoveTime;
             public Ease ItemsMoveEase => _itemsMoveEase;
@@ -233,7 +235,6 @@ namespace _Project.Scripts.FlaskSequence
             public float FrinkMoveTime => _frinkMoveTime;
             public Ease FrinkMoveEase => _frinkMoveEase;
             public float MoveYOffsetInSelected => _moveYOffsetInSelected;
-            public float StartYFrinksPositions => _startYFrinksPositions;
         }
     }
 }

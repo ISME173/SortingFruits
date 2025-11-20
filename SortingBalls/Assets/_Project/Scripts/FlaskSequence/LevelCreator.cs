@@ -22,84 +22,182 @@ namespace _Project.Scripts.FlaskSequence
 
         [Header("Settings")]
         [SerializeField, Min(0)] private float _spawnOffsetBetweenFlasks;
-        [SerializeField] private LevelGenerationSettings _generationSettings; // ScriptableObject с ключами уровней
+        [SerializeField, Min(0)] private float _spawnRowOffsetY = 2f; // Смещение по Y между рядами (новое)
+        [SerializeField] private LevelGenerationSettings _generationSettings;
 
         private ISaves _saves;
         private readonly List<Flask> _spawnedFlasks = new List<Flask>();
 
+        public event Action<LevelData> LevelCreated;
+
+        private int _currentLevelIndex = -1;
+        private bool _allLevelsLoaded = false;
+
         private async void Awake()
         {
-            await LoadAllLevelsFromAddressables();
-            if (AllLevels.Count > 0)
+            await LoadFirstLevelAndCreateView();
+            _ = LoadRemainingLevels();
+        }
+
+        #region Загрузка уровней
+
+        private async Task LoadFirstLevelAndCreateView()
+        {
+            if (_generationSettings == null || _generationSettings.GeneratedLevelKeys == null || _generationSettings.GeneratedLevelKeys.Count == 0)
             {
-                CreateLevelView(AllLevels[0]);
+                Debug.LogWarning("[LevelCreator] Нет настроек или списка ключей уровней.");
+                return;
+            }
+
+            string firstKey = _generationSettings.GeneratedLevelKeys[0];
+            LevelData level = await LoadLevelByKey(firstKey);
+            if (level != null)
+            {
+                AllLevels.Add(level);
+                _currentLevelIndex = 0;
+                CreateLevelView(level);
             }
             else
             {
-                Debug.LogWarning("[LevelCreator] Нет загруженных уровней.");
+                Debug.LogError($"[LevelCreator] Не удалось загрузить первый уровень по ключу '{firstKey}'.");
             }
         }
 
-        private async Task LoadAllLevelsFromAddressables()
+        private async Task LoadRemainingLevels()
         {
-            AllLevels.Clear();
-
-            if (_generationSettings == null)
-            {
-                Debug.LogWarning("[LevelCreator] Не назначен LevelGenerationSettings для загрузки уровней.");
+            if (_generationSettings == null || _generationSettings.GeneratedLevelKeys == null)
                 return;
+
+            for (int i = 1; i < _generationSettings.GeneratedLevelKeys.Count; i++)
+            {
+                string key = _generationSettings.GeneratedLevelKeys[i];
+                LevelData level = await LoadLevelByKey(key);
+                if (level != null)
+                    AllLevels.Add(level);
             }
 
-            if (_generationSettings.GeneratedLevelKeys == null || _generationSettings.GeneratedLevelKeys.Count == 0)
+            _allLevelsLoaded = true;
+            Debug.Log($"[LevelCreator] Все уровни загружены. Всего: {AllLevels.Count}");
+        }
+
+        private async Task<LevelData> LoadLevelByKey(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+                return null;
+
+            if (_saves != null && _saves.HasKey(key))
             {
-                Debug.LogWarning("[LevelCreator] Список ключей уровней пуст.");
-                return;
-            }
+                LevelData saved = _saves.GetObject<LevelData>(key, default);
+                if (saved != null)
+                    return saved;
 
-            foreach (string key in _generationSettings.GeneratedLevelKeys)
-            {
-                if (string.IsNullOrWhiteSpace(key))
-                    continue;
-
-                AsyncOperationHandle<TextAsset> handle = Addressables.LoadAssetAsync<TextAsset>(key);
-                await handle.Task;
-
-                if (handle.Status == AsyncOperationStatus.Succeeded)
+                string jsonStr = _saves.GetString(key, string.Empty);
+                if (!string.IsNullOrEmpty(jsonStr))
                 {
                     try
                     {
-                        var json = handle.Result.text;
-                        var levelData = JsonConvert.DeserializeObject<LevelData>(json);
-                        if (levelData != null)
-                        {
-                            AllLevels.Add(levelData);
-                        }
-                        else
-                        {
-                            Debug.LogError($"[LevelCreator] Не удалось десериализовать уровень из ключа '{key}'.");
-                        }
+                        LevelData parsed = JsonConvert.DeserializeObject<LevelData>(jsonStr);
+                        if (parsed != null)
+                            return parsed;
                     }
                     catch (Exception ex)
                     {
-                        Debug.LogError($"[LevelCreator] Ошибка парсинга JSON для '{key}': {ex.Message}");
+                        Debug.LogWarning($"[LevelCreator] Ошибка чтения сохранённого JSON для '{key}': {ex.Message}");
                     }
                 }
-                else
-                {
-                    Debug.LogError($"[LevelCreator] Не удалось загрузить Addressable по ключу '{key}'.");
-                }
-
-                Addressables.Release(handle);
             }
 
-            Debug.Log($"[LevelCreator] Загружено уровней: {AllLevels.Count}");
+            AsyncOperationHandle<TextAsset> handle = Addressables.LoadAssetAsync<TextAsset>(key);
+            await handle.Task;
+
+            LevelData result = null;
+            if (handle.Status == AsyncOperationStatus.Succeeded)
+            {
+                try
+                {
+                    var json = handle.Result.text;
+                    result = JsonConvert.DeserializeObject<LevelData>(json);
+                    if (result == null)
+                        Debug.LogError($"[LevelCreator] Json пустой или неверный для ключа '{key}'.");
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[LevelCreator] Ошибка парсинга JSON для '{key}': {ex.Message}");
+                }
+            }
+            else
+            {
+                Debug.LogError($"[LevelCreator] Не удалось загрузить Addressable по ключу '{key}'.");
+            }
+
+            Addressables.Release(handle);
+
+            if (result != null && _saves != null)
+            {
+                try
+                {
+                    _saves.SetObject(key, result, prettyPrint: true);
+                    _saves.Save();
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[LevelCreator] Не удалось сохранить уровень '{key}' в ISaves: {ex.Message}");
+                }
+            }
+
+            return result;
         }
+
+        #endregion
+
+        #region Управление уровнями
+
+        public void LoadNextLevel()
+        {
+            int nextIndex = _currentLevelIndex + 1;
+            if (nextIndex >= AllLevels.Count)
+            {
+                Debug.Log(!_allLevelsLoaded
+                    ? "[LevelCreator] Следующий уровень ещё не загружен."
+                    : "[LevelCreator] Нет следующего уровня.");
+                return;
+            }
+
+            _currentLevelIndex = nextIndex;
+            CreateLevelView(AllLevels[_currentLevelIndex]);
+        }
+
+        public void ReloadCurrentLevel()
+        {
+            if (_currentLevelIndex < 0 || _currentLevelIndex >= AllLevels.Count)
+            {
+                Debug.LogWarning("[LevelCreator] Текущий индекс уровня некорректен.");
+                return;
+            }
+            CreateLevelView(AllLevels[_currentLevelIndex]);
+        }
+
+        public void LoadLevelByIndex(int index)
+        {
+            if (index < 0 || index >= AllLevels.Count)
+            {
+                Debug.LogWarning($"[LevelCreator] Индекс {index} вне диапазона загруженных уровней.");
+                return;
+            }
+            _currentLevelIndex = index;
+            CreateLevelView(AllLevels[_currentLevelIndex]);
+        }
+
+        public int CurrentLevelIndex => _currentLevelIndex;
+        public int LevelsCount => AllLevels.Count;
+
+        #endregion
 
         /// <summary>
         /// Создаёт визуальное представление уровня по данным <see cref="LevelData"/>.
-        /// Каждая внутренняя коллекция Flasks[i] содержит список фруктов (строки) снизу -> вверх.
+        /// Максимум 3 колбы в ряд. Если больше, начинается новый ряд выше на _spawnRowOffsetY.
+        /// Каждый ряд центрируется относительно _startCreateFlasksPoint.
         /// </summary>
-        /// <param name="levelData">Данные уровня.</param>
         private void CreateLevelView(LevelData levelData)
         {
             if (levelData == null)
@@ -116,73 +214,90 @@ namespace _Project.Scripts.FlaskSequence
 
             ClearCurrentLevelView();
 
-            // Создание колб по горизонтали от стартовой точки.
-            for (int i = 0; i < levelData.Flasks.Count; i++)
+            int total = levelData.Flasks.Count;
+            if (total <= 0)
+                return;
+
+            Vector3 basePos = _startCreateFlasksPoint.position;
+            float spacingX = _spawnOffsetBetweenFlasks;
+            float spacingY = _spawnRowOffsetY;
+            const int maxPerRow = 3;
+
+            int created = 0;
+            int row = 0;
+
+            while (created < total)
             {
-                Vector3 spawnPos = _startCreateFlasksPoint.position + new Vector3(i * _spawnOffsetBetweenFlasks, 0f, 0f);
-                Flask flaskInstance = Instantiate(_flaskPrefab, spawnPos, Quaternion.identity, _startCreateFlasksPoint.parent);
-                _spawnedFlasks.Add(flaskInstance);
+                int remaining = total - created;
+                int inRow = remaining < maxPerRow ? remaining : maxPerRow;
 
-                List<string> fruitsInFlask = levelData.Flasks[i];
-                if (fruitsInFlask == null || fruitsInFlask.Count == 0)
-                    continue; // Пустая колба
+                // Центрируем по горизонтали
+                float startX = basePos.x - 0.5f * spacingX * (inRow - 1);
+                float y = basePos.y + row * spacingY;
 
-                // Добавляем фрукты снизу -> вверх. TryAddItem кладёт в первый свободный слот (нижний).
-                for (int j = 0; j < fruitsInFlask.Count; j++)
+                for (int i = 0; i < inRow; i++)
                 {
-                    string fruitName = fruitsInFlask[j];
-                    Item prefab = FindItemPrefab(fruitName);
-                    if (prefab == null)
-                    {
-                        Debug.LogWarning($"[LevelCreator] Не найден префаб фрукта '{fruitName}'. Пропуск.");
+                    int flaskIndex = created + i;
+                    float x = startX + i * spacingX;
+                    Vector3 spawnPos = new Vector3(x, y, basePos.z);
+
+                    Flask flaskInstance = Instantiate(_flaskPrefab, spawnPos, Quaternion.identity, _startCreateFlasksPoint.parent);
+                    _spawnedFlasks.Add(flaskInstance);
+
+                    List<string> fruitsInFlask = levelData.Flasks[flaskIndex];
+                    if (fruitsInFlask == null || fruitsInFlask.Count == 0)
                         continue;
-                    }
 
-                    // Получаем трансформ свободного слота, чтобы правильно позиционировать инстанс.
-                    Transform slotTransform = flaskInstance.GetFirstEmptySlotTransform();
-                    if (slotTransform == null)
+                    for (int j = 0; j < fruitsInFlask.Count; j++)
                     {
-                        Debug.LogWarning($"[LevelCreator] Нет свободного слота в колбе {i + 1} при добавлении '{fruitName}'.");
-                        break;
-                    }
+                        string fruitName = fruitsInFlask[j];
+                        Item prefab = FindItemPrefab(fruitName);
+                        if (prefab == null)
+                        {
+                            Debug.LogWarning($"[LevelCreator] Не найден префаб фрукта '{fruitName}'. Пропуск.");
+                            continue;
+                        }
 
-                    Item itemInstance = Instantiate(prefab, slotTransform.position, Quaternion.identity);
-                    // Назначаем родителя слота – для локального позиционирования и удобства.
-                    itemInstance.transform.SetParent(slotTransform, worldPositionStays: false);
-                    itemInstance.transform.localPosition = Vector3.zero;
+                        Transform slotTransform = flaskInstance.GetFirstEmptySlotTransform();
+                        if (slotTransform == null)
+                        {
+                            Debug.LogWarning($"[LevelCreator] Нет свободного слота в колбе {flaskIndex + 1} при добавлении '{fruitName}'.");
+                            break;
+                        }
 
-                    bool added = flaskInstance.TryAddItem(itemInstance);
-                    if (!added)
-                    {
-                        // Если по какой-то причине не добавилось – удаляем инстанс чтобы не висел.
-                        Debug.LogWarning($"[LevelCreator] TryAddItem вернул false для '{fruitName}' в колбе {i + 1}.");
-                        Destroy(itemInstance.gameObject);
-                        break;
+                        Item itemInstance = Instantiate(prefab, slotTransform.position, Quaternion.identity);
+                        itemInstance.transform.SetParent(slotTransform, worldPositionStays: false);
+                        itemInstance.transform.localPosition = Vector3.zero;
+
+                        if (!flaskInstance.TryAddItem(itemInstance))
+                        {
+                            Debug.LogWarning($"[LevelCreator] TryAddItem вернул false для '{fruitName}' в колбе {flaskIndex + 1}.");
+                            Destroy(itemInstance.gameObject);
+                            break;
+                        }
                     }
                 }
+
+                created += inRow;
+                row++;
             }
+
+            LevelCreated?.Invoke(levelData);
         }
 
-        /// <summary>
-        /// Удаляет ранее созданные объекты колб и их предметов.
-        /// </summary>
         private void ClearCurrentLevelView()
         {
-            if (_spawnedFlasks.Count == 0)
-                return;
+            if (_spawnedFlasks.Count == 0) return;
 
             for (int i = 0; i < _spawnedFlasks.Count; i++)
             {
                 Flask flask = _spawnedFlasks[i];
-                if (flask == null) continue;
-                Destroy(flask.gameObject);
+                if (flask != null)
+                    Destroy(flask.gameObject);
             }
             _spawnedFlasks.Clear();
         }
 
-        /// <summary>
-        /// Поиск префаба Item по имени фрукта (ItemName).
-        /// </summary>
         private Item FindItemPrefab(string fruitName)
         {
             if (string.IsNullOrEmpty(fruitName))
@@ -198,10 +313,6 @@ namespace _Project.Scripts.FlaskSequence
         }
     }
 
-    /// <summary>
-    /// Данные уровня для сериализации в json.
-    /// Порядок фруктов в каждой колбе: снизу -> вверх (index 0 = нижний слот).
-    /// </summary>
     [Serializable]
     public class LevelData
     {
