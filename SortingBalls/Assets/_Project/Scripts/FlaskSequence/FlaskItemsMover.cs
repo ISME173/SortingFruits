@@ -9,6 +9,8 @@ namespace _Project.Scripts.FlaskSequence
 {
     public class FlaskItemsMover : IDisposable
     {
+        private readonly Dictionary<Flask, float> FlaskYPositionInUp = new Dictionary<Flask, float>();
+        private readonly Dictionary<Flask, float> FlaskYPositionInDown = new Dictionary<Flask, float>();
         private readonly Dictionary<Flask, MotionHandle> MovingFlasks = new Dictionary<Flask, MotionHandle>();
         private readonly HashSet<Flask> UsingFilling = new HashSet<Flask>();
         private readonly Camera CurrentCamera;
@@ -174,7 +176,12 @@ namespace _Project.Scripts.FlaskSequence
                     MovingFlasks.Remove(flask);
                 }
 
-                _moveUpFrinkHandle = LMotion.Create(flask.transform.localPosition, new Vector3(flask.transform.localPosition.x, flask.transform.localPosition.y + MoveSettings.MoveYOffsetInSelected, 0), MoveSettings.FrinkMoveTime)
+                if (FlaskYPositionInUp.ContainsKey(flask) == false)
+                {
+                    FlaskYPositionInUp.Add(flask, flask.transform.localPosition.y + MoveSettings.MoveYOffsetInSelected);
+                }
+
+                _moveUpFrinkHandle = LMotion.Create(flask.transform.localPosition, new Vector3(flask.transform.localPosition.x, FlaskYPositionInUp[flask], 0), MoveSettings.FrinkMoveTime)
                   .WithEase(MoveSettings.FrinkMoveEase)
                   .WithCancelOnError()
                   .WithOnComplete(() =>
@@ -198,7 +205,12 @@ namespace _Project.Scripts.FlaskSequence
                     MovingFlasks.Remove(flask);
                 }
 
-                _moveDownFrinkHandle = LMotion.Create(flask.transform.localPosition, new Vector3(flask.transform.localPosition.x, flask.transform.localPosition.y - MoveSettings.MoveYOffsetInSelected, 0), MoveSettings.FrinkMoveTime)
+                if (FlaskYPositionInDown.ContainsKey(flask) == false)
+                {
+                    FlaskYPositionInDown.Add(flask, flask.transform.localPosition.y - MoveSettings.MoveYOffsetInSelected);
+                }
+
+                _moveDownFrinkHandle = LMotion.Create(flask.transform.localPosition, new Vector3(flask.transform.localPosition.x, FlaskYPositionInDown[flask], 0), MoveSettings.FrinkMoveTime)
                   .WithEase(MoveSettings.FrinkMoveEase)
                   .WithCancelOnError()
                   .WithOnComplete(() =>

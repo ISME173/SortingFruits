@@ -614,7 +614,7 @@ MonoBehaviour:
     _itemsMoveEase: 5
     _frinkMoveTime: 0.3
     _frinkMoveEase: 5
-    _moveYOffsetInSelected: 1.5
+    _moveYOffsetInSelected: 1
   _desktopInputPrefab: {fileID: 5496097376863406095, guid: 18307d6aac856b14bb1540b69380ecbc, type: 3}
   _mobileInputPrefab: {fileID: 8511537414095092906, guid: f82c78029a9ef1943aff85c851049a96, type: 3}
 --- !u!1 &1700269444
