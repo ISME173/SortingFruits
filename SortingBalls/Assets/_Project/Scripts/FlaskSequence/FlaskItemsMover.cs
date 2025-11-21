@@ -38,7 +38,7 @@ namespace _Project.Scripts.FlaskSequence
 
             if (hit2D.collider != null && hit2D.collider.TryGetComponent(out Flask flask))
             {
-                if (UsingFilling.Contains(flask))
+                if (UsingFilling.Contains(flask) || flask.IsFilled)
                     return;
 
                 if (_currentFlask == null)
@@ -138,7 +138,7 @@ namespace _Project.Scripts.FlaskSequence
 
                 // ВАЖНО: сохраняем мировые координаты и масштаб при смене родителя,
                 // чтобы не унаследовать scale от родителя (который может быть != 1)
-                item.transform.SetParent(startFlask.SlotForSelectItems.transform, true); // was: false
+                //item.transform.SetParent(startFlask.SlotForSelectItems.transform, true); // was: false
                 // Не трогаем localScale вручную — так Unity скомпенсирует масштаб родителя, сохранив world scale
 
                 MotionSequenceBuilder moveItemSequence = LSequence.Create();
@@ -146,21 +146,18 @@ namespace _Project.Scripts.FlaskSequence
                 moveItemSequence
                     .Append(LMotion.Create(p0, p1, MoveSettings.ItemsMoveTime)
                         .WithEase(MoveSettings.ItemsMoveEase)
-                        .WithCancelOnError()
                         .BindToPosition(item.transform))
                     .Append(LMotion.Create(p1, p2, MoveSettings.ItemsMoveTime)
                         .WithEase(MoveSettings.ItemsMoveEase)
-                        .WithCancelOnError()
                         .BindToPosition(item.transform))
                     .Append(LMotion.Create(p2, p3, MoveSettings.ItemsMoveTime)
                         .WithEase(Ease.OutBounce)
-                        .WithCancelOnError()
                         .WithOnComplete(() =>
                         {
                             // Финальная привязка к целевой ячейке с сохранением world-параметров
                             item.transform.SetParent(firstEmptySlot, true); // сохраняем world position/rotation/scale
                             // На всякий случай зафиксируем позицию в точке слота
-                            item.transform.position = p3;
+                            //item.transform.position = p3;
 
                             // Если принципиально иметь zero localPosition у item внутри слота,
                             // можно раскомментировать строку ниже — при масштабируемом родителе это не меняет world scale.

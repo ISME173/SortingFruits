@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace _Project.Scripts.FlaskSequence
 {
@@ -30,7 +31,7 @@ namespace _Project.Scripts.FlaskSequence
         private int _currentLevelIndex = -1;
         private bool _allLevelsLoaded = false;
 
-        public event Action<LevelData> LevelCreated;
+        public event Action<LevelData> LevelCreated, LevelCompleted;
 
         public int CurrentLevelIndex => _currentLevelIndex;
         public int LevelsCount => AllLevels.Count;
@@ -276,6 +277,8 @@ namespace _Project.Scripts.FlaskSequence
                             break;
                         }
                     }
+
+                    flaskInstance.OnFilled += OnFilledFlask;
                 }
 
                 created += inRow;
@@ -285,6 +288,17 @@ namespace _Project.Scripts.FlaskSequence
             LevelCreated?.Invoke(levelData);
         }
 
+        private void OnFilledFlask()
+        {
+            Flask emptyFlask = SpawnedFlasks.FirstOrDefault(flask => flask.FreeSlotsCount == 4);
+
+            if (emptyFlask != null && SpawnedFlasks.Where(flask => flask != emptyFlask).All(flask => flask.IsFilled))
+            {
+                Debug.Log($"Level {_currentLevelIndex + 1} completed!");
+                LevelCompleted?.Invoke(AllLevels[_currentLevelIndex]);
+            }
+        }
+
         private void ClearCurrentLevelView()
         {
             if (SpawnedFlasks.Count == 0) return;
@@ -292,6 +306,9 @@ namespace _Project.Scripts.FlaskSequence
             for (int i = 0; i < SpawnedFlasks.Count; i++)
             {
                 Flask flask = SpawnedFlasks[i];
+
+                flask.OnFilled -= OnFilledFlask;
+
                 if (flask != null)
                     Destroy(flask.gameObject);
             }

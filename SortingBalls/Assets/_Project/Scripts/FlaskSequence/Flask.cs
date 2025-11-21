@@ -11,16 +11,29 @@ namespace _Project.Scripts.FlaskSequence
         [SerializeField] private Transform _slotForSelectItems;
         [SerializeField] private List<ItemSlot> _itemSlots = new List<ItemSlot>();
 
+        public event Action OnFilled;
+
+        public bool IsFilled { get; private set; } = false;
         public Transform SlotForSelectItems => _slotForSelectItems;
         public int FreeSlotsCount => _itemSlots.Where(slot => slot.Item == null).Count();
 
         public bool TryAddItem(Item item)
         {
+            if (IsFilled)
+                return false;
+
             ItemSlot slot = _itemSlots.FirstOrDefault(x => x.Item == null);
 
             if (slot != null)
             {
                 slot.Item = item;
+
+                if (FreeSlotsCount == 0 && _itemSlots.All(s => s.Item.ItemName == slot.Item.ItemName))
+                {
+                    IsFilled = true;
+                    OnFilled?.Invoke();
+                }
+
                 return true;
             }
 
