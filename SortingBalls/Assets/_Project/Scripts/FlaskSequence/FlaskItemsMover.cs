@@ -3,6 +3,7 @@ using LitMotion;
 using LitMotion.Extensions;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -14,21 +15,51 @@ namespace _Project.Scripts.FlaskSequence
         private readonly Dictionary<Flask, float> FlaskYPositionInDown = new Dictionary<Flask, float>();
         private readonly Dictionary<Flask, MotionHandle> MovingFlasks = new Dictionary<Flask, MotionHandle>();
         private readonly HashSet<Flask> UsingFilling = new HashSet<Flask>();
+        private readonly HashSet<MotionHandle> MovingItemHandlers = new HashSet<MotionHandle>();
         private readonly Camera CurrentCamera;
         private readonly MovingSettings MoveSettings;
         private readonly IInput CurrentInput;
+        private readonly LevelCreator LevelCreator;
 
+        private CancellationTokenSource _moveItemsCts = new CancellationTokenSource();
         private Flask _currentFlask;
         private MotionHandle _moveUpFrinkHandle;
         private MotionHandle _moveDownFrinkHandle;
 
-        public FlaskItemsMover(Camera mainCamera, MovingSettings movingSettings, IInput input)
+        public event Action OnAnyItemMovingEnd, OnAnyItemMovingStart;
+
+        public bool IsMovingAnyItem => MovingItemHandlers.Count > 0;
+
+        public FlaskItemsMover(Camera mainCamera, MovingSettings movingSettings, IInput input, LevelCreator levelCreator)
         {
             CurrentCamera = mainCamera;
             MoveSettings = movingSettings;
             CurrentInput = input;
+            LevelCreator = levelCreator;
 
             CurrentInput.OnTriggerDown += SearchFlask;
+            LevelCreator.LevelCompleted += OnLevelComplete;
+            LevelCreator.LevelCreated += OnLevelCreated;
+        }
+
+        private void OnLevelComplete(LevelData levelData)
+        {
+            if (!_moveItemsCts.IsCancellationRequested)
+                _moveItemsCts.Cancel();
+
+            _moveItemsCts.Dispose();
+            _moveItemsCts = new CancellationTokenSource();
+        }
+
+        private void OnLevelCreated(LevelData levelData)
+        {
+            foreach (var handle in MovingItemHandlers)
+                handle.TryCancel();
+            MovingItemHandlers.Clear();
+
+            foreach (var key in MovingFlasks.Keys)
+                MovingFlasks[key].TryCancel();
+            MovingFlasks.Clear();
         }
 
         private void SearchFlask(Vector3 screenPosition)
@@ -101,14 +132,19 @@ namespace _Project.Scripts.FlaskSequence
                 maxItemsToMove--;
             }
 
-            MoveAllItems();
-
+            MoveAllItems(_moveItemsCts.Token);
             return true;
 
-            async void MoveAllItems()
+            async void MoveAllItems(CancellationToken ct)
             {
                 for (int i = 0; i < itemsToMove.Count; i++)
-                {
+                {   
+                    if (ct.IsCancellationRequested)
+                    {
+                        UsingFilling.Remove(endFlask);
+                        break;
+                    }
+
                     if (i == itemsToMove.Count - 1)
                     {
                         MoveOneItem(itemsToMove[i], () =>
@@ -123,51 +159,69 @@ namespace _Project.Scripts.FlaskSequence
 
                     endFlask.TryAddItem(itemsToMove[i]);
 
-                    await Task.Delay(MoveSettings.MillisecondsDelayBetweenMoveItems);
+                    try
+                    {
+                        await Task.Delay(MoveSettings.MillisecondsDelayBetweenMoveItems, ct);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        UsingFilling.Remove(endFlask);
+                        break;
+                    }
                 }
             }
 
             void MoveOneItem(Item item, Action callback)
             {
-                // Точки пути в мировых координатах
                 Transform firstEmptySlot = endFlask.GetFirstEmptySlotTransform();
+
                 Vector3 p0 = item.transform.position;
                 Vector3 p1 = startFlask.SlotForSelectItems.position;
                 Vector3 p2 = endFlask.SlotForSelectItems.position;
                 Vector3 p3 = firstEmptySlot.position;
 
-                // ВАЖНО: сохраняем мировые координаты и масштаб при смене родителя,
-                // чтобы не унаследовать scale от родителя (который может быть != 1)
-                //item.transform.SetParent(startFlask.SlotForSelectItems.transform, true); // was: false
-                // Не трогаем localScale вручную — так Unity скомпенсирует масштаб родителя, сохранив world scale
-
                 MotionSequenceBuilder moveItemSequence = LSequence.Create();
+                MotionHandle? motionHandle = null;
 
                 moveItemSequence
                     .Append(LMotion.Create(p0, p1, MoveSettings.ItemsMoveTime)
                         .WithEase(MoveSettings.ItemsMoveEase)
+                        .WithCancelOnError()
                         .BindToPosition(item.transform))
                     .Append(LMotion.Create(p1, p2, MoveSettings.ItemsMoveTime)
+                        .WithCancelOnError()
                         .WithEase(MoveSettings.ItemsMoveEase)
                         .BindToPosition(item.transform))
                     .Append(LMotion.Create(p2, p3, MoveSettings.ItemsMoveTime)
+                        .WithCancelOnError()
                         .WithEase(Ease.OutBounce)
                         .WithOnComplete(() =>
                         {
-                            // Финальная привязка к целевой ячейке с сохранением world-параметров
-                            item.transform.SetParent(firstEmptySlot, true); // сохраняем world position/rotation/scale
-                            // На всякий случай зафиксируем позицию в точке слота
-                            //item.transform.position = p3;
+                            if (motionHandle != null)
+                            {
+                                MovingItemHandlers.Remove(motionHandle.Value);
 
-                            // Если принципиально иметь zero localPosition у item внутри слота,
-                            // можно раскомментировать строку ниже — при масштабируемом родителе это не меняет world scale.
-                            // item.transform.localPosition = Vector3.zero;
+                                if (IsMovingAnyItem == false)
+                                    OnAnyItemMovingEnd?.Invoke();
+                            }
 
+                            item.transform.SetParent(firstEmptySlot, true);
                             callback?.Invoke();
                         })
-                        .BindToPosition(item.transform));
+                        .Bind((progress) =>
+                        {
+                            if (item == null)
+                                return;
 
-                moveItemSequence.Run();
+                            item.transform.position = progress;
+                        }));
+
+                motionHandle = moveItemSequence.Run();
+
+                if (!IsMovingAnyItem)
+                    OnAnyItemMovingStart?.Invoke();
+
+                MovingItemHandlers.Add(motionHandle.Value);
             }
         }
 
@@ -223,7 +277,13 @@ namespace _Project.Scripts.FlaskSequence
                       if (MovingFlasks.ContainsKey(flask))
                           MovingFlasks.Remove(flask);
                   })
-                  .BindToLocalPosition(flask.transform);
+                  .Bind((progress) =>
+                  {
+                      if (flask == null)
+                          return;
+
+                      flask.transform.localPosition = progress;
+                  });
 
                 MovingFlasks.Add(flask, _moveDownFrinkHandle);
             }
@@ -231,7 +291,14 @@ namespace _Project.Scripts.FlaskSequence
 
         public void Dispose()
         {
+            LevelCreator.LevelCompleted -= OnLevelComplete;
+            LevelCreator.LevelCreated -= OnLevelCreated;
             CurrentInput.OnTriggerDown -= SearchFlask;
+
+            if (!_moveItemsCts.IsCancellationRequested)
+                _moveItemsCts.Cancel();
+
+            _moveItemsCts.Dispose();
         }
 
         [Serializable]

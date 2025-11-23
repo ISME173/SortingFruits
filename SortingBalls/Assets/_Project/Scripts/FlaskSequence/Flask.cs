@@ -16,6 +16,7 @@ namespace _Project.Scripts.FlaskSequence
         public bool IsFilled { get; private set; } = false;
         public Transform SlotForSelectItems => _slotForSelectItems;
         public int FreeSlotsCount => _itemSlots.Where(slot => slot.Item == null).Count();
+        public bool IsEmpty => _itemSlots.All(slot => slot.Item == null);
 
         public bool TryAddItem(Item item)
         {

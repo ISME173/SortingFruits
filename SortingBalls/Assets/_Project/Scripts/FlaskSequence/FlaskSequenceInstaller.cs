@@ -8,7 +8,7 @@ namespace _Project.Scripts.FlaskSequence
     {
         [Header("References")]
         [SerializeField] private Camera _mainCamera;
-
+        [SerializeField] private LevelCreator _levelCreator;
         [Header("Settings")]
         [SerializeField] private FlaskItemsMover.MovingSettings _movingSettings;
 
@@ -50,8 +50,9 @@ namespace _Project.Scripts.FlaskSequence
                 Debug.LogError("Invalid device type! Supported only mobile and desktop");
             }
 
-            _frinkItemsMover = new FlaskItemsMover(_mainCamera, _movingSettings, input);
+            _frinkItemsMover = new FlaskItemsMover(_mainCamera, _movingSettings, input, _levelCreator);
 
+            containerBuilder.AddSingleton(_levelCreator);
             containerBuilder.AddSingleton(_frinkItemsMover);
         }
     }

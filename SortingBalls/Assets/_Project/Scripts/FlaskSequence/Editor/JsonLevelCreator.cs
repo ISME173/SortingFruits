@@ -14,11 +14,14 @@ namespace _Project.Scripts.FlaskSequence.Editor
     {
         private const string PrefKey_LastFolder = "JsonLevelCreator.LastFolder";
         private const string PrefKey_LevelCount = "JsonLevelCreator.LevelCount";
+        private const string PrefKey_SettingsGuid = "JsonLevelCreator.SettingsGuid";
+        private const string PrefKey_Cleanup = "JsonLevelCreator.CleanupExtraFiles";
 
         private LevelGenerationSettings _settings;
         private string _saveFolderAbsolute;
         private int _levelsToGenerate = 10;
         private bool _clearAddressableKeysBeforeGen = true;
+        private bool _deleteExtraFiles = true; // новое поле
 
         private Vector2 _scroll;
 
@@ -35,14 +38,27 @@ namespace _Project.Scripts.FlaskSequence.Editor
         public static void Open()
         {
             var window = GetWindow<JsonLevelCreator>("JSON Level Generator");
-            window.minSize = new Vector2(560, 480);
+            window.minSize = new Vector2(560, 500);
         }
 
         private void OnEnable()
         {
             _saveFolderAbsolute = EditorPrefs.GetString(PrefKey_LastFolder, string.Empty);
             _levelsToGenerate = EditorPrefs.GetInt(PrefKey_LevelCount, 10);
+            _deleteExtraFiles = EditorPrefs.GetBool(PrefKey_Cleanup, true);
             _lastStatus = "Ожидание...";
+
+#if UNITY_EDITOR
+            string guid = EditorPrefs.GetString(PrefKey_SettingsGuid, string.Empty);
+            if (!string.IsNullOrEmpty(guid))
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                if (!string.IsNullOrEmpty(path))
+                {
+                    _settings = AssetDatabase.LoadAssetAtPath<LevelGenerationSettings>(path);
+                }
+            }
+#endif
         }
 
         private void InitStyles()
@@ -75,19 +91,28 @@ namespace _Project.Scripts.FlaskSequence.Editor
 
             _scroll = EditorGUILayout.BeginScrollView(_scroll);
 
+            // Settings asset
             EditorGUILayout.BeginVertical(_boxStyle);
             EditorGUILayout.LabelField("Asset настроек", EditorStyles.boldLabel);
-            _settings = (LevelGenerationSettings)EditorGUILayout.ObjectField(_settings, typeof(LevelGenerationSettings), false);
+            var newSettings = (LevelGenerationSettings)EditorGUILayout.ObjectField(_settings, typeof(LevelGenerationSettings), false);
+            if (newSettings != _settings)
+            {
+                _settings = newSettings;
+                PersistSettingsGuid();
+            }
             EditorGUILayout.EndVertical();
 
             EditorGUILayout.Space();
 
+            // Generation params
             EditorGUILayout.BeginVertical(_boxStyle);
             EditorGUILayout.LabelField("Параметры генерации", EditorStyles.boldLabel);
             _levelsToGenerate = EditorGUILayout.IntSlider("Количество уровней", _levelsToGenerate, 1, 1000);
             EditorPrefs.SetInt(PrefKey_LevelCount, _levelsToGenerate);
 
             _clearAddressableKeysBeforeGen = EditorGUILayout.ToggleLeft("Очистить список Addressables ключей перед генерацией", _clearAddressableKeysBeforeGen);
+            _deleteExtraFiles = EditorGUILayout.ToggleLeft("Удалять лишние JSON файлы в папке сохранения", _deleteExtraFiles);
+            EditorPrefs.SetBool(PrefKey_Cleanup, _deleteExtraFiles);
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Папка сохранения (рекомендуется внутри Assets для Addressables)", EditorStyles.boldLabel);
@@ -140,6 +165,23 @@ namespace _Project.Scripts.FlaskSequence.Editor
             EditorGUILayout.LabelField($"Статус: {_lastStatus}", EditorStyles.miniLabel);
             if (_lastGenerateTime > 0)
                 EditorGUILayout.LabelField($"Время генерации: {_lastGenerateTime:F2} c.", _footerStyle);
+        }
+
+        private void PersistSettingsGuid()
+        {
+#if UNITY_EDITOR
+            if (_settings == null)
+            {
+                EditorPrefs.DeleteKey(PrefKey_SettingsGuid);
+                return;
+            }
+            string path = AssetDatabase.GetAssetPath(_settings);
+            if (!string.IsNullOrEmpty(path))
+            {
+                string guid = AssetDatabase.AssetPathToGUID(path);
+                EditorPrefs.SetString(PrefKey_SettingsGuid, guid);
+            }
+#endif
         }
 
         private void DrawPreviewSection(bool canPreview)
@@ -207,6 +249,8 @@ namespace _Project.Scripts.FlaskSequence.Editor
                     errors.Add("MinExtraEmptyFlasks > MaxExtraEmptyFlasks.");
                 if (_settings.FlaskCapacity <= 0)
                     errors.Add("FlaskCapacity должен быть > 0.");
+                if (_settings.MaxFlasksPerLevel < (_settings.MinFruitTypes + 1))
+                    errors.Add("MaxFlasksPerLevel меньше минимально необходимого (MinFruitTypes + обязательная пустая).");
             }
 
             return errors;
@@ -218,11 +262,15 @@ namespace _Project.Scripts.FlaskSequence.Editor
 
             double startTime = EditorApplication.timeSinceStartup;
             int generated = 0;
+            var generatedKeysLocal = new List<string>();
 
             try
             {
                 if (_clearAddressableKeysBeforeGen)
                     _settings.GeneratedLevelKeys.Clear();
+
+                _settings.LastGenerationTimestamp = DateTime.UtcNow.Ticks;
+                _settings.ForceReloadOnNextPlay = true;
 
                 for (int levelIndex = 1; levelIndex <= _levelsToGenerate; levelIndex++)
                 {
@@ -241,16 +289,39 @@ namespace _Project.Scripts.FlaskSequence.Editor
                     File.WriteAllText(fullPath, json);
                     generated++;
 
+                    generatedKeysLocal.Add(key);
+
                     if (!_settings.GeneratedLevelKeys.Contains(key))
                         _settings.GeneratedLevelKeys.Add(key);
                 }
 
-                // Сохраняем изменения в ScriptableObject
+                // Удаление лишних JSON файлов
+                if (_deleteExtraFiles && Directory.Exists(_saveFolderAbsolute))
+                {
+                    var expectedFiles = new HashSet<string>(
+                        generatedKeysLocal.Select(k => k + ".json"),
+                        StringComparer.OrdinalIgnoreCase);
+
+                    var allJson = Directory.GetFiles(_saveFolderAbsolute, "*.json", SearchOption.TopDirectoryOnly);
+                    int deleted = 0;
+                    foreach (var path in allJson)
+                    {
+                        string name = Path.GetFileName(path);
+                        if (!expectedFiles.Contains(name))
+                        {
+                            File.Delete(path);
+                            deleted++;
+                        }
+                    }
+                    if (deleted > 0)
+                        Debug.Log($"[LevelGen] Удалено лишних JSON файлов: {deleted}");
+                }
+
                 EditorUtility.SetDirty(_settings);
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh();
 
-                _lastStatus = $"Сгенерировано {generated} уровней. Ключей в настройках: {_settings.GeneratedLevelKeys.Count}";
+                _lastStatus = $"Сгенерировано {generated} уровней. Ключей: {_settings.GeneratedLevelKeys.Count}";
                 Debug.Log($"[LevelGen] Готово. Сгенерировано {generated} уровней. Папка: {_saveFolderAbsolute}");
             }
             catch (Exception ex)
@@ -298,6 +369,17 @@ namespace _Project.Scripts.FlaskSequence.Editor
                 _settings.MaxExtraEmptyFlasks);
 
             int capacity = _settings.FlaskCapacity;
+
+            int maxFlasks = _settings.MaxFlasksPerLevel;
+            int baseNeeded = fruitTypes + 1;
+            if (baseNeeded > maxFlasks)
+            {
+                fruitTypes = Mathf.Clamp(maxFlasks - 1, _settings.MinFruitTypes, fruitTypes);
+                baseNeeded = fruitTypes + 1;
+            }
+            if (baseNeeded + extraEmpty > maxFlasks)
+                extraEmpty = Mathf.Max(0, maxFlasks - baseNeeded);
+
             int totalFlasks = fruitTypes + 1 + extraEmpty;
 
             var fruits = _settings.AvailableFruitNames.Take(fruitTypes).ToList();

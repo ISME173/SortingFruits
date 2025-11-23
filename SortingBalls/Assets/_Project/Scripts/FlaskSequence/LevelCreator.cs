@@ -24,23 +24,39 @@ namespace _Project.Scripts.FlaskSequence
 
         [Header("Settings")]
         [SerializeField, Min(0)] private float _spawnOffsetBetweenFlasks;
-        [SerializeField, Min(0)] private float _spawnRowOffsetY = 2f; // Смещение по Y между рядами (новое)
+        [SerializeField, Min(0)] private float _spawnRowOffsetY = 2f;
+        [SerializeField, Min(1)] private int _flasksCountInRow = 4;
+
+        [Header("Assets")]
         [SerializeField] private LevelGenerationSettings _generationSettings;
 
+        private FlaskItemsMover _flaskItemsMover;
         private ISaves _saves;
         private int _currentLevelIndex = -1;
         private bool _allLevelsLoaded = false;
+        private bool _forceReloadGeneration; // НОВОЕ
 
         public event Action<LevelData> LevelCreated, LevelCompleted;
 
         public int CurrentLevelIndex => _currentLevelIndex;
         public int LevelsCount => AllLevels.Count;
 
-
         private async void Awake()
         {
+            // Читаем флаг принудительной перезагрузки
+            _forceReloadGeneration = _generationSettings != null && _generationSettings.ForceReloadOnNextPlay;
+
             await LoadFirstLevelAndCreateView();
             _ = LoadRemainingLevels();
+
+            // После первой загрузки сбрасываем флаг, чтобы в следующий запуск использовать сохранения
+            if (_generationSettings != null && _generationSettings.ForceReloadOnNextPlay)
+            {
+                _generationSettings.ForceReloadOnNextPlay = false;
+#if UNITY_EDITOR
+                UnityEditor.EditorUtility.SetDirty(_generationSettings);
+#endif
+            }
         }
 
         #region Загрузка уровней
@@ -89,7 +105,8 @@ namespace _Project.Scripts.FlaskSequence
             if (string.IsNullOrWhiteSpace(key))
                 return null;
 
-            if (_saves != null && _saves.HasKey(key))
+            // Если требуется принудительная перезагрузка – игнорируем сохранения.
+            if (!_forceReloadGeneration && _saves != null && _saves.HasKey(key))
             {
                 LevelData saved = _saves.GetObject<LevelData>(key, default);
                 if (saved != null)
@@ -111,6 +128,7 @@ namespace _Project.Scripts.FlaskSequence
                 }
             }
 
+            // Грузим из Addressables (всегда при принудительной перезагрузке или если нет сохранения)
             AsyncOperationHandle<TextAsset> handle = Addressables.LoadAssetAsync<TextAsset>(key);
             await handle.Task;
 
@@ -136,6 +154,7 @@ namespace _Project.Scripts.FlaskSequence
 
             Addressables.Release(handle);
 
+            // Всегда сохраняем свежий результат (если есть), даже при принудительной перезагрузке – обновляем кэш
             if (result != null && _saves != null)
             {
                 try
@@ -156,6 +175,7 @@ namespace _Project.Scripts.FlaskSequence
 
         #region Управление уровнями
 
+        [ContextMenu("LevelsControll/LoadNextLevel")]
         public void LoadNextLevel()
         {
             int nextIndex = _currentLevelIndex + 1;
@@ -171,6 +191,7 @@ namespace _Project.Scripts.FlaskSequence
             CreateLevelView(AllLevels[_currentLevelIndex]);
         }
 
+        [ContextMenu("LevelsControll/ReloadCurrentLevel")]
         public void ReloadCurrentLevel()
         {
             if (_currentLevelIndex < 0 || _currentLevelIndex >= AllLevels.Count)
@@ -188,6 +209,7 @@ namespace _Project.Scripts.FlaskSequence
                 Debug.LogWarning($"[LevelCreator] Индекс {index} вне диапазона загруженных уровней.");
                 return;
             }
+
             _currentLevelIndex = index;
             CreateLevelView(AllLevels[_currentLevelIndex]);
         }
@@ -222,7 +244,6 @@ namespace _Project.Scripts.FlaskSequence
             Vector3 basePos = _startCreateFlasksPoint.position;
             float spacingX = _spawnOffsetBetweenFlasks;
             float spacingY = _spawnRowOffsetY;
-            const int maxPerRow = 3;
 
             int created = 0;
             int row = 0;
@@ -230,9 +251,8 @@ namespace _Project.Scripts.FlaskSequence
             while (created < total)
             {
                 int remaining = total - created;
-                int inRow = remaining < maxPerRow ? remaining : maxPerRow;
+                int inRow = remaining < _flasksCountInRow ? remaining : _flasksCountInRow;
 
-                // Центрируем по горизонтали
                 float startX = basePos.x - 0.5f * spacingX * (inRow - 1);
                 float y = basePos.y + row * spacingY;
 
@@ -244,6 +264,8 @@ namespace _Project.Scripts.FlaskSequence
 
                     Flask flaskInstance = Instantiate(_flaskPrefab, spawnPos, Quaternion.identity, _startCreateFlasksPoint.parent);
                     SpawnedFlasks.Add(flaskInstance);
+
+                    flaskInstance.OnFilled += OnFilledFlask;
 
                     List<string> fruitsInFlask = levelData.Flasks[flaskIndex];
                     if (fruitsInFlask == null || fruitsInFlask.Count == 0)
@@ -277,8 +299,6 @@ namespace _Project.Scripts.FlaskSequence
                             break;
                         }
                     }
-
-                    flaskInstance.OnFilled += OnFilledFlask;
                 }
 
                 created += inRow;
@@ -290,28 +310,45 @@ namespace _Project.Scripts.FlaskSequence
 
         private void OnFilledFlask()
         {
-            Flask emptyFlask = SpawnedFlasks.FirstOrDefault(flask => flask.FreeSlotsCount == 4);
-
-            if (emptyFlask != null && SpawnedFlasks.Where(flask => flask != emptyFlask).All(flask => flask.IsFilled))
+            if (SpawnedFlasks.All(flask => flask.IsFilled || flask.IsEmpty))
             {
                 Debug.Log($"Level {_currentLevelIndex + 1} completed!");
                 LevelCompleted?.Invoke(AllLevels[_currentLevelIndex]);
+
+                if (_flaskItemsMover.IsMovingAnyItem)
+                {
+                    _flaskItemsMover.OnAnyItemMovingEnd += OnAnyItemMovingEnd;
+                }
+                else
+                {
+                    LoadNextLevel();
+                }
+
+                void OnAnyItemMovingEnd()
+                {
+                    _flaskItemsMover.OnAnyItemMovingEnd -= OnAnyItemMovingEnd;
+
+                    LoadNextLevel();
+                }
             }
         }
 
         private void ClearCurrentLevelView()
         {
-            if (SpawnedFlasks.Count == 0) return;
+            if (SpawnedFlasks.Count == 0)
+                return;
 
             for (int i = 0; i < SpawnedFlasks.Count; i++)
             {
                 Flask flask = SpawnedFlasks[i];
 
-                flask.OnFilled -= OnFilledFlask;
-
                 if (flask != null)
+                {
+                    flask.OnFilled -= OnFilledFlask;
                     Destroy(flask.gameObject);
+                }
             }
+
             SpawnedFlasks.Clear();
         }
 
@@ -324,9 +361,10 @@ namespace _Project.Scripts.FlaskSequence
         }
 
         [Inject]
-        private void Initialize(ISaves saves)
+        private void Initialize(ISaves saves, FlaskItemsMover flaskItemsMover)
         {
             _saves = saves;
+            _flaskItemsMover = flaskItemsMover;
         }
     }
 

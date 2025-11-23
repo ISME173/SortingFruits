@@ -13,22 +13,24 @@ MonoBehaviour:
   m_Name: LevelGenerationSettings
   m_EditorClassIdentifier: 
   MinFruitTypes: 3
-  MaxFruitTypes: 5
+  MaxFruitTypes: 7
   MinExtraEmptyFlasks: 0
   MaxExtraEmptyFlasks: 1
   FlaskCapacity: 4
-  LevelsPerFruitIncrease: 3
+  LevelsPerFruitIncrease: 4
   LevelsPerExtraEmptyFlaskIncrease: 7
-  MinSolutionMoves: 8
+  MinSolutionMoves: 6
   MaxSolverStates: 250000
   UseSolverValidation: 1
-  MaxGenerationAttemptsPerLevel: 30
+  MaxGenerationAttemptsPerLevel: 100
   AvailableFruitNames:
   - Apple
   - Orange
   - Banana
   - Pear
   - Grape
+  - strawberry
+  - blueberry
   AvoidAlmostSolved: 1
   BreakSolvedFlasks: 1
   GeneratedLevelKeys:
@@ -55,3 +57,33 @@ MonoBehaviour:
   - Level_21
   - Level_22
   - Level_23
+  - Level_24
+  - Level_25
+  - Level_26
+  - Level_27
+  - Level_28
+  - Level_29
+  - Level_30
+  - Level_31
+  - Level_32
+  - Level_33
+  - Level_34
+  - Level_35
+  - Level_36
+  - Level_37
+  - Level_38
+  - Level_39
+  - Level_40
+  - Level_41
+  - Level_42
+  - Level_43
+  - Level_44
+  - Level_45
+  - Level_46
+  - Level_47
+  - Level_48
+  - Level_49
+  - Level_50
+  MaxFlasksPerLevel: 8
+  LastGenerationTimestamp: 638994533642764541
+  ForceReloadOnNextPlay: 1
