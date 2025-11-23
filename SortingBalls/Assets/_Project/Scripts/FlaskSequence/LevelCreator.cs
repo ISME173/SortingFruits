@@ -1,4 +1,4 @@
-using _Project.Scripts.Saves;
+п»їusing _Project.Scripts.Saves;
 using Reflex.Attributes;
 using System;
 using System.Collections.Generic;
@@ -15,6 +15,14 @@ namespace _Project.Scripts.FlaskSequence
     {
         private readonly List<LevelData> AllLevels = new List<LevelData>();
         private readonly List<Flask> SpawnedFlasks = new List<Flask>();
+
+        // РҐСЂР°РЅРёС‚ РєР»СЋС‡Рё СѓСЂРѕРІРЅРµР№ РІ РїРѕСЂСЏРґРєРµ Р·Р°РіСЂСѓР·РєРё (РїРµСЂРІС‹Рј Р±СѓРґРµС‚ СЃРѕС…СЂР°РЅС‘РЅРЅС‹Р№ СѓСЂРѕРІРµРЅСЊ, РµСЃР»Рё РµСЃС‚СЊ)
+        private List<string> _orderedGeneratedKeys = null;
+
+        // РљР»СЋС‡Рё Р·Р°РіСЂСѓР¶РµРЅРЅС‹С… СѓСЂРѕРІРЅРµР№ (СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‚ СЌР»РµРјРµРЅС‚Р°Рј AllLevels РїРѕ РёРЅРґРµРєСЃСѓ)
+        private readonly List<string> _loadedLevelKeys = new List<string>();
+
+        private const string SaveKey_CurrentLevel = "FlaskSequence_LastPlayedLevelKey";
 
         [Header("References")]
         [SerializeField] private Flask _flaskPrefab;
@@ -34,7 +42,7 @@ namespace _Project.Scripts.FlaskSequence
         private ISaves _saves;
         private int _currentLevelIndex = -1;
         private bool _allLevelsLoaded = false;
-        private bool _forceReloadGeneration; // НОВОЕ
+        private bool _forceReloadGeneration; // РќРћР’РћР•
 
         public event Action<LevelData> LevelCreated, LevelCompleted;
 
@@ -43,13 +51,16 @@ namespace _Project.Scripts.FlaskSequence
 
         private async void Awake()
         {
-            // Читаем флаг принудительной перезагрузки
+            // Р§РёС‚Р°РµРј С„Р»Р°Рі РїСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕР№ РїРµСЂРµР·Р°РіСЂСѓР·РєРё
             _forceReloadGeneration = _generationSettings != null && _generationSettings.ForceReloadOnNextPlay;
+
+            // РџРѕСЃС‚СЂРѕРёРј Р»РѕРєР°Р»СЊРЅС‹Р№ РїРѕСЂСЏРґРѕРє РєР»СЋС‡РµР№ СѓСЂРѕРІРЅРµР№: СЃРѕС…СЂР°РЅС‘РЅРЅС‹Р№ РєР»СЋС‡ вЂ” РїРµСЂРІС‹Р№ (РµСЃР»Рё РµСЃС‚СЊ Рё РЅРµ РїСЂРёРЅСѓРґРёС‚РµР»СЊРЅР°СЏ РїРµСЂРµР·Р°РіСЂСѓР·РєР°)
+            BuildOrderedGeneratedKeys();
 
             await LoadFirstLevelAndCreateView();
             _ = LoadRemainingLevels();
 
-            // После первой загрузки сбрасываем флаг, чтобы в следующий запуск использовать сохранения
+            // РџРѕСЃР»Рµ РїРµСЂРІРѕР№ Р·Р°РіСЂСѓР·РєРё СЃР±СЂР°СЃС‹РІР°РµРј С„Р»Р°Рі, С‡С‚РѕР±С‹ РІ СЃР»РµРґСѓСЋС‰РёР№ Р·Р°РїСѓСЃРє РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ СЃРѕС…СЂР°РЅРµРЅРёСЏ
             if (_generationSettings != null && _generationSettings.ForceReloadOnNextPlay)
             {
                 _generationSettings.ForceReloadOnNextPlay = false;
@@ -59,45 +70,89 @@ namespace _Project.Scripts.FlaskSequence
             }
         }
 
-        #region Загрузка уровней
+        #region Р—Р°РіСЂСѓР·РєР° СѓСЂРѕРІРЅРµР№
 
-        private async Task LoadFirstLevelAndCreateView()
+        private void BuildOrderedGeneratedKeys()
         {
-            if (_generationSettings == null || _generationSettings.GeneratedLevelKeys == null || _generationSettings.GeneratedLevelKeys.Count == 0)
+            if (_generationSettings == null || _generationSettings.GeneratedLevelKeys == null)
             {
-                Debug.LogWarning("[LevelCreator] Нет настроек или списка ключей уровней.");
+                _orderedGeneratedKeys = new List<string>();
                 return;
             }
 
-            string firstKey = _generationSettings.GeneratedLevelKeys[0];
+            // РљРѕРїРёСЂСѓРµРј РѕСЂРёРіРёРЅР°Р»СЊРЅС‹Р№ СЃРїРёСЃРѕРє
+            var original = _generationSettings.GeneratedLevelKeys;
+            _orderedGeneratedKeys = new List<string>(original);
+
+            if (_saves == null)
+                return;
+
+            if (_forceReloadGeneration)
+                return;
+
+            try
+            {
+                if (_saves.HasKey(SaveKey_CurrentLevel))
+                {
+                    string savedKey = _saves.GetString(SaveKey_CurrentLevel, string.Empty);
+                    if (!string.IsNullOrEmpty(savedKey) && original.Contains(savedKey))
+                    {
+                        // РџРµСЂРµРјРµС‰Р°РµРј СЃРѕС…СЂР°РЅС‘РЅРЅС‹Р№ РєР»СЋС‡ РЅР° РїРµСЂРІСѓСЋ РїРѕР·РёС†РёСЋ, СЃРѕС…СЂР°РЅСЏСЏ РїРѕСЂСЏРґРѕРє РѕСЃС‚Р°Р»СЊРЅС‹С…
+                        _orderedGeneratedKeys.Remove(savedKey);
+                        _orderedGeneratedKeys.Insert(0, savedKey);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[LevelCreator] РћС€РёР±РєР° С‡С‚РµРЅРёСЏ СЃРѕС…СЂР°РЅС‘РЅРЅРѕРіРѕ РєР»СЋС‡Р° СѓСЂРѕРІРЅСЏ: {ex.Message}");
+            }
+        }
+
+        private async Task LoadFirstLevelAndCreateView()
+        {
+            if (_generationSettings == null || _orderedGeneratedKeys == null || _orderedGeneratedKeys.Count == 0)
+            {
+                Debug.LogWarning("[LevelCreator] РќРµС‚ РЅР°СЃС‚СЂРѕРµРє РёР»Рё СЃРїРёСЃРєР° РєР»СЋС‡РµР№ СѓСЂРѕРІРЅРµР№.");
+                return;
+            }
+
+            string firstKey = _orderedGeneratedKeys[0];
             LevelData level = await LoadLevelByKey(firstKey);
             if (level != null)
             {
                 AllLevels.Add(level);
+                _loadedLevelKeys.Add(firstKey);
                 _currentLevelIndex = 0;
                 CreateLevelView(level);
+
+                // РЎРѕС…СЂР°РЅСЏРµРј С‚РµРєСѓС‰РёР№ СѓСЂРѕРІРµРЅСЊ РІ ISaves
+                SaveCurrentLevelKey();
             }
             else
             {
-                Debug.LogError($"[LevelCreator] Не удалось загрузить первый уровень по ключу '{firstKey}'.");
+                Debug.LogError($"[LevelCreator] РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РїРµСЂРІС‹Р№ СѓСЂРѕРІРµРЅСЊ РїРѕ РєР»СЋС‡Сѓ '{firstKey}'.");
             }
         }
 
         private async Task LoadRemainingLevels()
         {
-            if (_generationSettings == null || _generationSettings.GeneratedLevelKeys == null)
+            if (_orderedGeneratedKeys == null)
                 return;
 
-            for (int i = 1; i < _generationSettings.GeneratedLevelKeys.Count; i++)
+            for (int i = 1; i < _orderedGeneratedKeys.Count; i++)
             {
-                string key = _generationSettings.GeneratedLevelKeys[i];
+                string key = _orderedGeneratedKeys[i];
                 LevelData level = await LoadLevelByKey(key);
                 if (level != null)
+                {
                     AllLevels.Add(level);
+                    _loadedLevelKeys.Add(key);
+                }
             }
 
             _allLevelsLoaded = true;
-            Debug.Log($"[LevelCreator] Все уровни загружены. Всего: {AllLevels.Count}");
+            Debug.Log($"[LevelCreator] Р’СЃРµ СѓСЂРѕРІРЅРё Р·Р°РіСЂСѓР¶РµРЅС‹. Р’СЃРµРіРѕ: {AllLevels.Count}");
         }
 
         private async Task<LevelData> LoadLevelByKey(string key)
@@ -105,7 +160,7 @@ namespace _Project.Scripts.FlaskSequence
             if (string.IsNullOrWhiteSpace(key))
                 return null;
 
-            // Если требуется принудительная перезагрузка – игнорируем сохранения.
+            // Р•СЃР»Рё С‚СЂРµР±СѓРµС‚СЃСЏ РїСЂРёРЅСѓРґРёС‚РµР»СЊРЅР°СЏ РїРµСЂРµР·Р°РіСЂСѓР·РєР° вЂ“ РёРіРЅРѕСЂРёСЂСѓРµРј СЃРѕС…СЂР°РЅРµРЅРёСЏ.
             if (!_forceReloadGeneration && _saves != null && _saves.HasKey(key))
             {
                 LevelData saved = _saves.GetObject<LevelData>(key, default);
@@ -123,12 +178,12 @@ namespace _Project.Scripts.FlaskSequence
                     }
                     catch (Exception ex)
                     {
-                        Debug.LogWarning($"[LevelCreator] Ошибка чтения сохранённого JSON для '{key}': {ex.Message}");
+                        Debug.LogWarning($"[LevelCreator] РћС€РёР±РєР° С‡С‚РµРЅРёСЏ СЃРѕС…СЂР°РЅС‘РЅРЅРѕРіРѕ JSON РґР»СЏ '{key}': {ex.Message}");
                     }
                 }
             }
 
-            // Грузим из Addressables (всегда при принудительной перезагрузке или если нет сохранения)
+            // Р“СЂСѓР·РёРј РёР· Addressables (РІСЃРµРіРґР° РїСЂРё РїСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕР№ РїРµСЂРµР·Р°РіСЂСѓР·РєРµ РёР»Рё РµСЃР»Рё РЅРµС‚ СЃРѕС…СЂР°РЅРµРЅРёСЏ)
             AsyncOperationHandle<TextAsset> handle = Addressables.LoadAssetAsync<TextAsset>(key);
             await handle.Task;
 
@@ -140,21 +195,21 @@ namespace _Project.Scripts.FlaskSequence
                     var json = handle.Result.text;
                     result = JsonConvert.DeserializeObject<LevelData>(json);
                     if (result == null)
-                        Debug.LogError($"[LevelCreator] Json пустой или неверный для ключа '{key}'.");
+                        Debug.LogError($"[LevelCreator] Json РїСѓСЃС‚РѕР№ РёР»Рё РЅРµРІРµСЂРЅС‹Р№ РґР»СЏ РєР»СЋС‡Р° '{key}'.");
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogError($"[LevelCreator] Ошибка парсинга JSON для '{key}': {ex.Message}");
+                    Debug.LogError($"[LevelCreator] РћС€РёР±РєР° РїР°СЂСЃРёРЅРіР° JSON РґР»СЏ '{key}': {ex.Message}");
                 }
             }
             else
             {
-                Debug.LogError($"[LevelCreator] Не удалось загрузить Addressable по ключу '{key}'.");
+                Debug.LogError($"[LevelCreator] РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ Addressable РїРѕ РєР»СЋС‡Сѓ '{key}'.");
             }
 
             Addressables.Release(handle);
 
-            // Всегда сохраняем свежий результат (если есть), даже при принудительной перезагрузке – обновляем кэш
+            // Р’СЃРµРіРґР° СЃРѕС…СЂР°РЅСЏРµРј СЃРІРµР¶РёР№ СЂРµР·СѓР»СЊС‚Р°С‚ (РµСЃР»Рё РµСЃС‚СЊ), РґР°Р¶Рµ РїСЂРё РїСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕР№ РїРµСЂРµР·Р°РіСЂСѓР·РєРµ вЂ“ РѕР±РЅРѕРІР»СЏРµРј РєСЌС€
             if (result != null && _saves != null)
             {
                 try
@@ -164,7 +219,7 @@ namespace _Project.Scripts.FlaskSequence
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogWarning($"[LevelCreator] Не удалось сохранить уровень '{key}' в ISaves: {ex.Message}");
+                    Debug.LogWarning($"[LevelCreator] РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ СѓСЂРѕРІРµРЅСЊ '{key}' РІ ISaves: {ex.Message}");
                 }
             }
 
@@ -173,7 +228,7 @@ namespace _Project.Scripts.FlaskSequence
 
         #endregion
 
-        #region Управление уровнями
+        #region РЈРїСЂР°РІР»РµРЅРёРµ СѓСЂРѕРІРЅСЏРјРё
 
         [ContextMenu("LevelsControll/LoadNextLevel")]
         public void LoadNextLevel()
@@ -182,13 +237,16 @@ namespace _Project.Scripts.FlaskSequence
             if (nextIndex >= AllLevels.Count)
             {
                 Debug.Log(!_allLevelsLoaded
-                    ? "[LevelCreator] Следующий уровень ещё не загружен."
-                    : "[LevelCreator] Нет следующего уровня.");
+                    ? "[LevelCreator] РЎР»РµРґСѓСЋС‰РёР№ СѓСЂРѕРІРµРЅСЊ РµС‰С‘ РЅРµ Р·Р°РіСЂСѓР¶РµРЅ."
+                    : "[LevelCreator] РќРµС‚ СЃР»РµРґСѓСЋС‰РµРіРѕ СѓСЂРѕРІРЅСЏ.");
                 return;
             }
 
             _currentLevelIndex = nextIndex;
             CreateLevelView(AllLevels[_currentLevelIndex]);
+
+            // РЎРѕС…СЂР°РЅСЏРµРј РІС‹Р±СЂР°РЅРЅС‹Р№ С‚РµРєСѓС‰РёР№ СѓСЂРѕРІРµРЅСЊ
+            SaveCurrentLevelKey();
         }
 
         [ContextMenu("LevelsControll/ReloadCurrentLevel")]
@@ -196,7 +254,7 @@ namespace _Project.Scripts.FlaskSequence
         {
             if (_currentLevelIndex < 0 || _currentLevelIndex >= AllLevels.Count)
             {
-                Debug.LogWarning("[LevelCreator] Текущий индекс уровня некорректен.");
+                Debug.LogWarning("[LevelCreator] РўРµРєСѓС‰РёР№ РёРЅРґРµРєСЃ СѓСЂРѕРІРЅСЏ РЅРµРєРѕСЂСЂРµРєС‚РµРЅ.");
                 return;
             }
             CreateLevelView(AllLevels[_currentLevelIndex]);
@@ -206,20 +264,23 @@ namespace _Project.Scripts.FlaskSequence
         {
             if (index < 0 || index >= AllLevels.Count)
             {
-                Debug.LogWarning($"[LevelCreator] Индекс {index} вне диапазона загруженных уровней.");
+                Debug.LogWarning($"[LevelCreator] РРЅРґРµРєСЃ {index} РІРЅРµ РґРёР°РїР°Р·РѕРЅР° Р·Р°РіСЂСѓР¶РµРЅРЅС‹С… СѓСЂРѕРІРЅРµР№.");
                 return;
             }
 
             _currentLevelIndex = index;
             CreateLevelView(AllLevels[_currentLevelIndex]);
+
+            // РЎРѕС…СЂР°РЅСЏРµРј РІС‹Р±СЂР°РЅРЅС‹Р№ С‚РµРєСѓС‰РёР№ СѓСЂРѕРІРµРЅСЊ
+            SaveCurrentLevelKey();
         }
 
         #endregion
 
         /// <summary>
-        /// Создаёт визуальное представление уровня по данным <see cref="LevelData"/>.
-        /// Максимум 3 колбы в ряд. Если больше, начинается новый ряд выше на _spawnRowOffsetY.
-        /// Каждый ряд центрируется относительно _startCreateFlasksPoint.
+        /// РЎРѕР·РґР°С‘С‚ РІРёР·СѓР°Р»СЊРЅРѕРµ РїСЂРµРґСЃС‚Р°РІР»РµРЅРёРµ СѓСЂРѕРІРЅСЏ РїРѕ РґР°РЅРЅС‹Рј <see cref="LevelData"/>.
+        /// РњР°РєСЃРёРјСѓРј 3 РєРѕР»Р±С‹ РІ СЂСЏРґ. Р•СЃР»Рё Р±РѕР»СЊС€Рµ, РЅР°С‡РёРЅР°РµС‚СЃСЏ РЅРѕРІС‹Р№ СЂСЏРґ РІС‹С€Рµ РЅР° _spawnRowOffsetY.
+        /// жЇЏдёЄиЎЊз›ёеЇ№дєЋ_startCreateFlasksPointе±…дё­гЂ‚
         /// </summary>
         private void CreateLevelView(LevelData levelData)
         {
@@ -231,7 +292,7 @@ namespace _Project.Scripts.FlaskSequence
 
             if (_flaskPrefab == null || _startCreateFlasksPoint == null)
             {
-                Debug.LogError("[LevelCreator] Не назначены ссылки на префаб колбы или стартовую точку.");
+                Debug.LogError("[LevelCreator] РќРµ РЅР°Р·РЅР°С‡РµРЅС‹ СЃСЃС‹Р»РєРё РЅР° РїСЂРµС„Р°Р± РєРѕР»Р±С‹ РёР»Рё СЃС‚Р°СЂС‚РѕРІСѓСЋ С‚РѕС‡РєСѓ.");
                 return;
             }
 
@@ -277,14 +338,14 @@ namespace _Project.Scripts.FlaskSequence
                         Item prefab = FindItemPrefab(fruitName);
                         if (prefab == null)
                         {
-                            Debug.LogWarning($"[LevelCreator] Не найден префаб фрукта '{fruitName}'. Пропуск.");
+                            Debug.LogWarning($"[LevelCreator] РќРµ РЅР°Р№РґРµРЅ РїСЂРµС„Р°Р± С„СЂСѓРєС‚Р° '{fruitName}'. РџСЂРѕРїСѓСЃРє.");
                             continue;
                         }
 
                         Transform slotTransform = flaskInstance.GetFirstEmptySlotTransform();
                         if (slotTransform == null)
                         {
-                            Debug.LogWarning($"[LevelCreator] Нет свободного слота в колбе {flaskIndex + 1} при добавлении '{fruitName}'.");
+                            Debug.LogWarning($"[LevelCreator] РќРµС‚ СЃРІРѕР±РѕРґРЅРѕРіРѕ СЃР»РѕС‚Р° РІ РєРѕР»Р±Рµ {flaskIndex + 1} РїСЂРё РґРѕР±Р°РІР»РµРЅРёРё '{fruitName}'.");
                             break;
                         }
 
@@ -294,7 +355,7 @@ namespace _Project.Scripts.FlaskSequence
 
                         if (!flaskInstance.TryAddItem(itemInstance))
                         {
-                            Debug.LogWarning($"[LevelCreator] TryAddItem вернул false для '{fruitName}' в колбе {flaskIndex + 1}.");
+                            Debug.LogWarning($"[LevelCreator] TryAddItem РІРµСЂРЅСѓР» false РґР»СЏ '{fruitName}' РІ РєРѕР»Р±Рµ {flaskIndex + 1}.");
                             Destroy(itemInstance.gameObject);
                             break;
                         }
@@ -360,11 +421,38 @@ namespace _Project.Scripts.FlaskSequence
             return _itemPrefabs.Find(x => string.Equals(x.ItemName, fruitName, StringComparison.Ordinal));
         }
 
+        private void SaveCurrentLevelKey()
+        {
+            if (_saves == null)
+                return;
+
+            if (_currentLevelIndex < 0 || _currentLevelIndex >= _loadedLevelKeys.Count)
+                return;
+
+            try
+            {
+                string key = _loadedLevelKeys[_currentLevelIndex];
+                if (!string.IsNullOrEmpty(key))
+                {
+                    _saves.SetString(SaveKey_CurrentLevel, key);
+                    _saves.Save();
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[LevelCreator] РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ С‚РµРєСѓС‰РёР№ РєР»СЋС‡ СѓСЂРѕРІРЅСЏ: {ex.Message}");
+            }
+        }
+
         [Inject]
         private void Initialize(ISaves saves, FlaskItemsMover flaskItemsMover)
         {
             _saves = saves;
             _flaskItemsMover = flaskItemsMover;
+
+            // Rebuild ordered keys now that _saves is available (РµСЃР»Рё Awake РµС‰С‘ РЅРµ РІС‹Р·РІР°РЅ РёР»Рё РґР»СЏ СЃР»СѓС‡Р°РµРІ С‚РµСЃС‚РёСЂРѕРІР°РЅРёСЏ)
+            if (_orderedGeneratedKeys == null)
+                BuildOrderedGeneratedKeys();
         }
     }
 
