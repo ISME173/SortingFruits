@@ -12,6 +12,7 @@ namespace _Project.Scripts.FlaskSequence
 {
     public class FlaskItemsMover : IDisposable
     {
+        private readonly Stack<Move> MovesInLevel = new Stack<Move>();
         private readonly Dictionary<Flask, float> FlaskYPositionInUp = new Dictionary<Flask, float>();
         private readonly Dictionary<Flask, float> FlaskYPositionInDown = new Dictionary<Flask, float>();
         private readonly Dictionary<Flask, MotionHandle> MovingFlasks = new Dictionary<Flask, MotionHandle>();
@@ -43,6 +44,21 @@ namespace _Project.Scripts.FlaskSequence
             LevelCreator.LevelCreated += OnLevelCreated;
         }
 
+        public bool TryCancelLastMove()
+        {
+            if (CanCancelLastMove() == false)
+                return false;
+
+            Move lastMove = MovesInLevel.Pop();
+
+            return TryMoveItems(lastMove.EndFlask, lastMove.StartFlask, true);
+        }
+
+        public bool CanCancelLastMove()
+        {
+            return MovesInLevel.Count > 0;
+        }
+
         private void OnLevelComplete(LevelData levelData)
         {
             if (!_moveItemsCts.IsCancellationRequested)
@@ -61,6 +77,8 @@ namespace _Project.Scripts.FlaskSequence
             foreach (var key in MovingFlasks.Keys)
                 MovingFlasks[key].TryCancel();
             MovingFlasks.Clear();
+
+            MovesInLevel.Clear();
         }
 
         private void SearchFlask(Vector3 screenPosition)
@@ -99,7 +117,7 @@ namespace _Project.Scripts.FlaskSequence
             _currentFlask = null;
         }
 
-        private bool TryMoveItems(Flask startFlask, Flask endFlask)
+        private bool TryMoveItems(Flask startFlask, Flask endFlask, bool moveAnyway = false)
         {
             if (startFlask.PeekFirstItem() == null)
                 return false;
@@ -112,8 +130,11 @@ namespace _Project.Scripts.FlaskSequence
             Item firstItemInEndFlask = endFlask.PeekFirstItem();
             string firstItemNameInEndFlask = firstItemInEndFlask != null ? firstItemInEndFlask.ItemName : string.Empty;
 
-            if (firstItemNameInEndFlask != string.Empty && moveItemName != firstItemNameInEndFlask)
-                return false;
+            if (moveAnyway == false)
+            {
+                if (firstItemNameInEndFlask != string.Empty && moveItemName != firstItemNameInEndFlask)
+                    return false;
+            }
 
             List<Item> itemsToMove = new List<Item>();
             int maxItemsToMove = endFlask.FreeSlotsCount;
@@ -126,8 +147,11 @@ namespace _Project.Scripts.FlaskSequence
                 if (peekFirstItem == null)
                     break;
 
-                if (peekFirstItem.ItemName != firstItemNameInEndFlask && firstItemNameInEndFlask != string.Empty)
-                    break;
+                if (moveAnyway == false)
+                {
+                    if (peekFirstItem.ItemName != firstItemNameInEndFlask && firstItemNameInEndFlask != string.Empty)
+                        break;
+                }
 
                 Item firstItemInStartFlask = startFlask.GetFirstItem();
                 itemsToMove.Add(firstItemInStartFlask);
@@ -137,12 +161,15 @@ namespace _Project.Scripts.FlaskSequence
             }
 
             MoveAllItems(_moveItemsCts.Token);
+
+            MovesInLevel.Push(new Move(startFlask, endFlask));
+
             return true;
 
             async void MoveAllItems(CancellationToken ct)
             {
                 for (int i = 0; i < itemsToMove.Count; i++)
-                {   
+                {
                     if (ct.IsCancellationRequested)
                     {
                         UsingFilling.Remove(endFlask);
@@ -327,6 +354,18 @@ namespace _Project.Scripts.FlaskSequence
             public Ease FrinkMoveEase => _frinkMoveEase;
             public float MoveYOffsetInSelected => _moveYOffsetInSelected;
             public int MillisecondsDelayBetweenMoveItems => _millisecondsDelayBetweenMoveItems;
+        }
+
+        private struct Move
+        {
+            public readonly Flask StartFlask;
+            public readonly Flask EndFlask;
+
+            public Move(Flask startFlask, Flask endFlask)
+            {
+                StartFlask = startFlask;
+                EndFlask = endFlask;
+            }
         }
     }
 }

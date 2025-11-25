@@ -56,4 +56,4 @@ MonoBehaviour:
   - Level_20
   MaxFlasksPerLevel: 10
   LastGenerationTimestamp: 638997083238438562
-  ForceReloadOnNextPlay: 1
+  ForceReloadOnNextPlay: 0
