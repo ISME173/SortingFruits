@@ -47,7 +47,8 @@ namespace _Project.Scripts.FlaskSequence
         public event Action<LevelData> LevelCreated, LevelCompleted;
 
         public int CurrentLevelIndex => _currentLevelIndex;
-        public int LevelsCount => AllLevels.Count;
+        public int LevelsCount => _generationSettings.GeneratedLevelKeys.Count;
+        public int LoadedLevelsCount => AllLevels.Count;
 
         private async void Awake()
         {

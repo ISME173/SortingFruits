@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace _Project.Scripts.FlaskSequence
 {
@@ -64,6 +65,9 @@ namespace _Project.Scripts.FlaskSequence
 
         private void SearchFlask(Vector3 screenPosition)
         {
+            if (EventSystem.current.IsPointerOverGameObject())
+                return;
+
             Ray ray = CurrentCamera.ScreenPointToRay(screenPosition);
             RaycastHit2D hit2D = Physics2D.GetRayIntersection(ray, Mathf.Infinity);
 
