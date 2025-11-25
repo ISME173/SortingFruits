@@ -162,6 +162,7 @@ namespace _Project.Scripts.FlaskSequence
             {
                 string key = _orderedGeneratedKeys[i];
                 LevelData level = await LoadLevelByKey(key);
+
                 if (level != null)
                 {
                     AllLevels.Add(level);

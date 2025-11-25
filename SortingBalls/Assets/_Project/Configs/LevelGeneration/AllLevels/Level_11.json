@@ -4,35 +4,36 @@
   "Flasks": [
     [
       "Apple",
-      "Apple",
-      "Apple",
-      "Banana"
-    ],
-    [
-      "Apple",
       "Orange",
       "Grape",
-      "Banana"
-    ],
-    [
-      "Pear",
-      "Orange",
-      "Orange",
-      "Grape"
-    ],
-    [
-      "Banana",
-      "Pear",
-      "Grape",
-      "Orange"
-    ],
-    [
-      "Grape",
-      "Banana",
-      "Pear",
       "Pear"
+    ],
+    [
+      "Grape",
+      "Grape",
+      "Orange",
+      "Pear"
+    ],
+    [
+      "Apple",
+      "Apple",
+      "Banana",
+      "Pear"
+    ],
+    [
+      "Banana",
+      "Orange",
+      "Orange",
+      "Banana"
+    ],
+    [
+      "Grape",
+      "Pear",
+      "Apple",
+      "Banana"
     ],
     [],
     []
-  ]
+  ],
+  "LevelState": 1
 }

@@ -73,7 +73,7 @@ namespace _Project.Scripts.FlaskSequence
 
             if (hit2D.collider != null && hit2D.collider.TryGetComponent(out Flask flask))
             {
-                if (UsingFilling.Contains(flask) || flask.IsFilled)
+                if ((UsingFilling.Contains(flask) || MovingFlasks.ContainsKey(flask)) || flask.IsFilled)
                     return;
 
                 if (_currentFlask == null)
@@ -186,6 +186,8 @@ namespace _Project.Scripts.FlaskSequence
 
                 MotionSequenceBuilder moveItemSequence = LSequence.Create();
                 MotionHandle? motionHandle = null;
+
+                item.transform.SetParent(null);
 
                 moveItemSequence
                     .Append(LMotion.Create(p0, p1, MoveSettings.ItemsMoveTime)
