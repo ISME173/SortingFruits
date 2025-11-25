@@ -48,14 +48,14 @@ namespace _Project.Scripts.Levels
                 LevelButton newLevelButton = Instantiate(_levelButtonPrefab);
                 newLevelButton.transform.SetParent(_parentForLevelButtons, false);
 
-                LevelButton.LevelButtonState levelButtonState = LevelButton.LevelButtonState.Locked;
+                LevelState levelState = LevelState.Locked;
 
                 if (openedLevelsCount - 1 >= i)
-                    levelButtonState = LevelButton.LevelButtonState.Opened;
+                    levelState = LevelState.Opened;
                 if (completedLevelsCount - 1 >= i)
-                    levelButtonState = LevelButton.LevelButtonState.Completed;
+                    levelState = LevelState.Completed;
 
-                newLevelButton.Initialize(i + 1, levelButtonState);
+                newLevelButton.Initialize(i + 1, levelState);
                 newLevelButton.OnLevelButtonDown += OnLevelButtonDown;
 
                 LevelButtons.Add(newLevelButton);

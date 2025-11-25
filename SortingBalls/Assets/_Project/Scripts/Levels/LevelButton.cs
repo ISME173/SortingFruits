@@ -1,3 +1,4 @@
+using _Project.Scripts.FlaskSequence;
 using System;
 using TMPro;
 using UnityEngine;
@@ -15,18 +16,13 @@ namespace _Project.Scripts.Levels
 
         private Button _button;
         private int _levelNumber;
-        private LevelButtonState _levelButtonState;
+        private LevelState _levelButtonState;
 
         public event Action<int> OnLevelButtonDown;
 
-        public enum LevelButtonState
-        {
-            Opened, Locked, Completed
-        }
-
         public int LevelNumber => _levelNumber;
 
-        public void Initialize(int levelNumber, LevelButtonState levelButtonState)
+        public void Initialize(int levelNumber, LevelState levelButtonState)
         {
             _button = GetComponent<Button>();
             _button.onClick.AddListener(() => OnLevelButtonDown?.Invoke(_levelNumber));
@@ -35,13 +31,13 @@ namespace _Project.Scripts.Levels
 
             switch (_levelButtonState)
             {
-                case LevelButtonState.Opened:
+                case LevelState.Opened:
                     Open();
                     break;
-                case LevelButtonState.Locked:
+                case LevelState.Locked:
                     Lock();
                     break;
-                case LevelButtonState.Completed:
+                case LevelState.Completed:
                     Complete();
                     break;
             }
@@ -51,10 +47,10 @@ namespace _Project.Scripts.Levels
 
         public void Lock()
         {
-            if (_levelButtonState == LevelButtonState.Opened)
+            if (_levelButtonState == LevelState.Opened)
                 return;
 
-            _levelButtonState = LevelButtonState.Opened;
+            _levelButtonState = LevelState.Opened;
 
             _levelNumberText.enabled = false;
             _button.interactable = false;
@@ -64,10 +60,10 @@ namespace _Project.Scripts.Levels
 
         public void Open()
         {
-            if (_levelButtonState == LevelButtonState.Locked)
+            if (_levelButtonState == LevelState.Locked)
                 return;
 
-            _levelButtonState = LevelButtonState.Locked;
+            _levelButtonState = LevelState.Locked;
 
             _levelNumberText.enabled = true;
             _button.interactable = true;
@@ -77,10 +73,10 @@ namespace _Project.Scripts.Levels
 
         public void Complete()
         {
-            if (_levelButtonState == LevelButtonState.Completed)
+            if (_levelButtonState == LevelState.Completed)
                 return;
 
-            _levelButtonState = LevelButtonState.Completed;
+            _levelButtonState = LevelState.Completed;
 
             _lockIcon.gameObject.SetActive(false);
             _levelNumberText.enabled = false;

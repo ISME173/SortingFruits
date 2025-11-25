@@ -463,5 +463,11 @@ namespace _Project.Scripts.FlaskSequence
         public int LevelIndex;
         public int FlaskCapacity;
         public List<List<string>> Flasks = new List<List<string>>();
+        public LevelState LevelState;
+    }
+
+    public enum LevelState
+    {
+        Opened, Locked, Completed
     }
 }
