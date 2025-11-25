@@ -11,12 +11,17 @@ namespace _Project.Scripts.DI
         [SerializeField] private bool _searchBindingModulesInOnValidate = true;
         [HideIf(nameof(_searchBindingModulesInOnValidate))]
         [SerializeField] private List<BindingModule> _bindingModules = new();
+        [ShowIf(nameof(_searchBindingModulesInOnValidate))]
+        [SerializeField, ReadOnly] private List<BindingModule> _readOnlyBindingModules = new();
 
         private void OnValidate()
         {
             if (_searchBindingModulesInOnValidate)
             {
-                _bindingModules = FindObjectsOfType<BindingModule>().ToList();   
+                _bindingModules = FindObjectsOfType<BindingModule>().ToList();
+
+                _readOnlyBindingModules.Clear();
+                _readOnlyBindingModules.AddRange(_bindingModules);
             }
         }
 

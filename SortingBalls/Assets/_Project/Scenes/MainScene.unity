@@ -1597,6 +1597,61 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1101429348
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1101429349}
+  - component: {fileID: 1101429350}
+  m_Layer: 0
+  m_Name: FlaskSequenceBindingModule
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1101429349
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1101429348}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1632095194}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1101429350
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1101429348}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1541d018b646fdd4b90b3026618c9f5b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _mainCamera: {fileID: 519420031}
+  _levelCreator: {fileID: 143332928}
+  _movingSettings:
+    _itemsMoveTime: 0.3
+    _itemsMoveEase: 5
+    _millisecondsDelayBetweenMoveItems: 80
+    _frinkMoveTime: 0.3
+    _frinkMoveEase: 5
+    _moveYOffsetInSelected: 1
+  _desktopInputPrefab: {fileID: 5496097376863406095, guid: 18307d6aac856b14bb1540b69380ecbc, type: 3}
+  _mobileInputPrefab: {fileID: 8511537414095092906, guid: f82c78029a9ef1943aff85c851049a96, type: 3}
 --- !u!1 &1295235950
 GameObject:
   m_ObjectHideFlags: 0
@@ -2593,7 +2648,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1632095194}
   - component: {fileID: 1632095195}
-  - component: {fileID: 1632095196}
   - component: {fileID: 1632095197}
   m_Layer: 0
   m_Name: SceneScope
@@ -2617,6 +2671,7 @@ Transform:
   m_Children:
   - {fileID: 589517469}
   - {fileID: 1010867487}
+  - {fileID: 1101429349}
   m_Father: {fileID: 1910583670}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1632095195
@@ -2631,29 +2686,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3fd1482e4a9dee141aecc5bcd0a4f0f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &1632095196
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1632095193}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 083c2be40d550e54b8a677f56f172a7e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _mainCamera: {fileID: 519420031}
-  _levelCreator: {fileID: 143332928}
-  _movingSettings:
-    _itemsMoveTime: 0.3
-    _itemsMoveEase: 5
-    _millisecondsDelayBetweenMoveItems: 80
-    _frinkMoveTime: 0.3
-    _frinkMoveEase: 5
-    _moveYOffsetInSelected: 1
-  _desktopInputPrefab: {fileID: 5496097376863406095, guid: 18307d6aac856b14bb1540b69380ecbc, type: 3}
-  _mobileInputPrefab: {fileID: 8511537414095092906, guid: f82c78029a9ef1943aff85c851049a96, type: 3}
 --- !u!114 &1632095197
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2668,6 +2700,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _searchBindingModulesInOnValidate: 1
   _bindingModules:
+  - {fileID: 1101429350}
+  - {fileID: 1010867488}
+  - {fileID: 589517470}
+  _readOnlyBindingModules:
+  - {fileID: 1101429350}
   - {fileID: 1010867488}
   - {fileID: 589517470}
 --- !u!1 &1700269444
