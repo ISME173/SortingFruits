@@ -104,6 +104,8 @@ namespace _Project.Scripts.FlaskSequence
                 {
                     if (TryMoveItems(_currentFlask, flask))
                     {
+                        MovesInLevel.Push(new Move(_currentFlask, flask));
+
                         MoveDownFlask(_currentFlask);
                         _currentFlask = null;
                         return;
@@ -161,9 +163,6 @@ namespace _Project.Scripts.FlaskSequence
             }
 
             MoveAllItems(_moveItemsCts.Token);
-
-            MovesInLevel.Push(new Move(startFlask, endFlask));
-
             return true;
 
             async void MoveAllItems(CancellationToken ct)
