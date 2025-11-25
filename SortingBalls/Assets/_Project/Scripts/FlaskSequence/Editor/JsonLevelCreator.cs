@@ -281,6 +281,8 @@ namespace _Project.Scripts.FlaskSequence.Editor
                         continue;
                     }
 
+                    data.LevelState = LevelState.Locked;
+
                     string fileName = $"Level_{data.LevelIndex}.json";
                     string key = Path.GetFileNameWithoutExtension(fileName);
                     string fullPath = Path.Combine(_saveFolderAbsolute, fileName);

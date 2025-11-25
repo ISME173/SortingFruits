@@ -34,6 +34,8 @@ namespace _Project.Scripts.FlaskSequence
         [SerializeField, Min(0)] private float _spawnOffsetBetweenFlasks;
         [SerializeField, Min(0)] private float _spawnRowOffsetY = 2f;
         [SerializeField, Min(1)] private int _flasksCountInRow = 4;
+        [Space]
+        [SerializeField] private bool _saveInOnDestroy = true;
 
         [Header("Assets")]
         [SerializeField] private LevelGenerationSettings _generationSettings;
@@ -44,11 +46,13 @@ namespace _Project.Scripts.FlaskSequence
         private bool _allLevelsLoaded = false;
         private bool _forceReloadGeneration; // НОВОЕ
 
-        public event Action<LevelData> LevelCreated, LevelCompleted;
+        public event Action<LevelData> LevelCreated, LevelCompleted, LevelLoaded;
 
         public int CurrentLevelIndex => _currentLevelIndex;
         public int LevelsCount => _generationSettings.GeneratedLevelKeys.Count;
         public int LoadedLevelsCount => AllLevels.Count;
+        public int OpenedLevelsCount => AllLevels.Where(level => level.LevelState == LevelState.Opened).Count();
+        public int CompletedLevelsCount => AllLevels.Where(level => level.LevelState == LevelState.Completed).Count();
 
         private async void Awake()
         {
@@ -68,6 +72,19 @@ namespace _Project.Scripts.FlaskSequence
 #if UNITY_EDITOR
                 UnityEditor.EditorUtility.SetDirty(_generationSettings);
 #endif
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (_saveInOnDestroy)
+            {
+                for (int i = 0; i < AllLevels.Count; i++)
+                {
+                    _saves.SetObject(_orderedGeneratedKeys[i], AllLevels[i], true);
+                }
+
+                _saves.Save();
             }
         }
 
@@ -149,6 +166,8 @@ namespace _Project.Scripts.FlaskSequence
                 {
                     AllLevels.Add(level);
                     _loadedLevelKeys.Add(key);
+
+                    LevelLoaded?.Invoke(level);
                 }
             }
 
@@ -231,13 +250,24 @@ namespace _Project.Scripts.FlaskSequence
 
         #region Управление уровнями
 
+        public void SetLevelStateByIndex(int levelIndex, LevelState levelState)
+        {
+            if (levelIndex < 0 || levelIndex > AllLevels.Count - 1)
+            {
+                Debug.LogWarning($"Invalid {nameof(levelIndex)}: {levelIndex}");
+                return;
+            }
+
+            AllLevels[levelIndex].LevelState = levelState;
+        }
+
         [ContextMenu("LevelsControll/LoadNextLevel")]
         public void LoadNextLevel()
         {
             int nextIndex = _currentLevelIndex + 1;
             if (nextIndex >= AllLevels.Count)
             {
-                Debug.Log(!_allLevelsLoaded
+                Debug.LogWarning(!_allLevelsLoaded
                     ? "[LevelCreator] Следующий уровень ещё не загружен."
                     : "[LevelCreator] Нет следующего уровня.");
                 return;
@@ -383,14 +413,18 @@ namespace _Project.Scripts.FlaskSequence
                 }
                 else
                 {
+                    SetLevelStateByIndex(_currentLevelIndex, LevelState.Completed);
                     LoadNextLevel();
+                    SetLevelStateByIndex(_currentLevelIndex, LevelState.Opened);
                 }
 
                 void OnAnyItemMovingEnd()
                 {
                     _flaskItemsMover.OnAnyItemMovingEnd -= OnAnyItemMovingEnd;
 
+                    SetLevelStateByIndex(_currentLevelIndex, LevelState.Completed);
                     LoadNextLevel();
+                    SetLevelStateByIndex(_currentLevelIndex, LevelState.Opened);
                 }
             }
         }
@@ -463,7 +497,7 @@ namespace _Project.Scripts.FlaskSequence
         public int LevelIndex;
         public int FlaskCapacity;
         public List<List<string>> Flasks = new List<List<string>>();
-        public LevelState LevelState;
+        public LevelState LevelState = LevelState.Locked;
     }
 
     public enum LevelState

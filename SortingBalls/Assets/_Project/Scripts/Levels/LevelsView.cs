@@ -72,7 +72,9 @@ namespace _Project.Scripts.Levels
                 return;
             }
 
-            LevelButtons[levelNumber - 1].Open();
+			//Debug.Log($"Open level: {levelNumber}");
+
+			LevelButtons[levelNumber - 1].Open();
         }
 
         public void LockLevel(int levelNumber)
@@ -83,17 +85,34 @@ namespace _Project.Scripts.Levels
                 return;
             }
 
+            //Debug.Log($"Lock level: {levelNumber}");
+
             LevelButtons[levelNumber - 1].Lock();
         }
 
-        private void OnLevelButtonDown(int levelNumber)
+		public void CompleteLevel(int levelNumber)
+		{
+			if (levelNumber < 1 || levelNumber > LevelButtons.Count)
+			{
+				Debug.LogWarning($"Invalid {nameof(levelNumber)} value: {levelNumber}");
+				return;
+			}
+
+			//Debug.Log($"Complete level: {levelNumber}");
+
+			LevelButtons[levelNumber - 1].Complete();
+		}
+
+		private void OnLevelButtonDown(int levelNumber)
         {
             OnLevelButtonClicked?.Invoke(levelNumber);
         }
 
         private void ExpandParentHeight(int totalButtons)
         {
-            int columns = 1;
+			_grid ??= _parentForLevelButtons.GetComponent<GridLayoutGroup>();
+
+			int columns = 1;
             switch (_grid.constraint)
             {
                 case GridLayoutGroup.Constraint.FixedColumnCount:
@@ -125,7 +144,7 @@ namespace _Project.Scripts.Levels
         {
             levelsController.Initialize(levelCreator);
 
-            _grid = _parentForLevelButtons.GetComponent<GridLayoutGroup>();
+            _grid ??= _parentForLevelButtons.GetComponent<GridLayoutGroup>();
 
             _closeLevelsViewButton.onClick.AddListener(() => OnCloseLevelsViewButtonClicked?.Invoke());
             _openLevelsViewButton.onClick.AddListener(() => OnOpenLevelsViewButtonClicked?.Invoke());

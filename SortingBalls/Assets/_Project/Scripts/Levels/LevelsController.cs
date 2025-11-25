@@ -21,6 +21,12 @@ namespace _Project.Scripts.Levels
         public void Initialize(LevelCreator levelCreator)
         {
             _levelCreator = levelCreator;
+
+            _levelCreator.LevelCompleted += OnLevelCompleted;
+            _levelCreator.LevelLoaded += OnLevelLoaded;
+            _levelCreator.LevelCreated += OnLevelCreated;
+
+            LevelsView.UpdateView(_levelCreator.LevelsCount, 1, 0);
         }
 
         public void Dispose()
@@ -28,6 +34,10 @@ namespace _Project.Scripts.Levels
             LevelsView.OnCloseLevelsViewButtonClicked -= OnCloseLevelsViewButtonClicked;
             LevelsView.OnOpenLevelsViewButtonClicked -= OnOpenLevelsViewButtonClicked;
             LevelsView.OnLevelButtonClicked -= OnLevelButtonDown;
+
+            _levelCreator.LevelCompleted -= OnLevelCompleted;
+            _levelCreator.LevelLoaded -= OnLevelLoaded;
+            _levelCreator.LevelCreated -= OnLevelCreated;
         }
 
         private void OnOpenLevelsViewButtonClicked()
@@ -44,6 +54,33 @@ namespace _Project.Scripts.Levels
         private void OnLevelButtonDown(int levelNumber)
         {
             _levelCreator.LoadLevelByIndex(levelNumber - 1);
+        }
+
+        private void OnLevelCompleted(LevelData levelData)
+        {
+            LevelsView.CompleteLevel(levelData.LevelIndex);
+        }
+
+        private void OnLevelCreated(LevelData levelData)
+        {
+            LevelsView.OpenLevel(levelData.LevelIndex);
+        }
+
+        private void OnLevelLoaded(LevelData levelData)
+        {
+            LevelState levelState = levelData.LevelState;
+            switch (levelState)
+            {
+                case LevelState.Opened:
+                    LevelsView.OpenLevel(levelData.LevelIndex);
+                    break;
+                case LevelState.Locked:
+                    LevelsView.LockLevel(levelData.LevelIndex);
+                    break;
+                case LevelState.Completed:
+                    LevelsView.CompleteLevel(levelData.LevelIndex);
+                    break;
+            }
         }
     }
 }
