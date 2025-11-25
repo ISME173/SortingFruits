@@ -383,6 +383,7 @@ MonoBehaviour:
   _spawnOffsetBetweenFlasks: 1
   _spawnRowOffsetY: 4
   _flasksCountInRow: 4
+  _saveInOnDestroy: 1
   _generationSettings: {fileID: 11400000, guid: 83a996eba7057354e9de7c3a8a0b8fda, type: 2}
 --- !u!114 &143332929
 MonoBehaviour:
@@ -2451,7 +2452,7 @@ MonoBehaviour:
   m_Content: {fileID: 452540417}
   m_Horizontal: 0
   m_Vertical: 1
-  m_MovementType: 1
+  m_MovementType: 2
   m_Elasticity: 0.1
   m_Inertia: 1
   m_DecelerationRate: 0.135
