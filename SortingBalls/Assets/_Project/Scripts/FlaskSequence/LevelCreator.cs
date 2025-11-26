@@ -1,13 +1,15 @@
 ﻿using _Project.Scripts.Saves;
+using Newtonsoft.Json;
 using Reflex.Attributes;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Unity.VisualScripting;
 using UnityEngine;
-using Newtonsoft.Json;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
-using System.Threading.Tasks;
-using System.Linq;
+using static UnityEngine.Rendering.DebugUI.Table;
 
 namespace _Project.Scripts.FlaskSequence
 {
@@ -45,6 +47,7 @@ namespace _Project.Scripts.FlaskSequence
         private int _currentLevelIndex = -1;
         private bool _allLevelsLoaded = false;
         private bool _forceReloadGeneration; // НОВОЕ
+        private int _currentSpawnFlasksRow = 1;
 
         public event Action<LevelData> LevelCreated, LevelCompleted, LevelLoaded;
 
@@ -309,6 +312,78 @@ namespace _Project.Scripts.FlaskSequence
 
         #endregion
 
+        public void AddEmptyFlask()
+        {
+            // Ограничения и проверки
+            if (!CanCreateFlask())
+            {
+                Debug.LogWarning("[LevelCreator] Превышен лимит колб для уровня.");
+                return;
+            }
+
+            if (_flaskPrefab == null || _startCreateFlasksPoint == null)
+            {
+                Debug.LogError("[LevelCreator] Не назначены ссылки на префаб колбы или стартовую точку.");
+                return;
+            }
+
+            // Базовые параметры позиционирования
+            Vector3 basePos = _startCreateFlasksPoint.position;
+            float spacingX = _spawnOffsetBetweenFlasks;
+            float spacingY = _spawnRowOffsetY;
+
+            // Текущие данные по ряду до добавления новой колбы
+            int totalBeforeAdd = SpawnedFlasks.Count;
+            int rowIndex = totalBeforeAdd / _flasksCountInRow;               // 0-based
+            int indexInRowBeforeAdd = totalBeforeAdd % _flasksCountInRow;    // 0..._flasksCountInRow-1
+
+            bool isNewRow = indexInRowBeforeAdd == 0; // если в текущем ряду 0 элементов, добавление начнет новый ряд
+
+            // Если начинается новый ряд — обновим счётчик рядов
+            if (isNewRow)
+                _currentSpawnFlasksRow++;
+
+            // Каким станет количество элементов в текущем ряду после добавления
+            int rowStart = rowIndex * _flasksCountInRow;
+            int currentRowCountBeforeAdd = totalBeforeAdd - rowStart;        // сколько уже есть в ряду (0.._flasksCountInRow-1)
+            int currentRowCountAfterAdd = Mathf.Min(currentRowCountBeforeAdd + 1, _flasksCountInRow);
+
+            // Центрирование: вычислим стартовую X-точку для ряда после добавления
+            float startXAfterAdd = basePos.x - 0.5f * spacingX * (currentRowCountAfterAdd - 1);
+            float rowY = basePos.y + rowIndex * spacingY;
+
+            // 1) Перепозиционируем 이미 созданные колбы текущего ряда для центрирования
+            for (int i = 0; i < currentRowCountBeforeAdd; i++)
+            {
+                int flaskListIndex = rowStart + i;
+                if (flaskListIndex < 0 || flaskListIndex >= SpawnedFlasks.Count)
+                    break;
+
+                float x = startXAfterAdd + i * spacingX;
+                Vector3 targetPos = new Vector3(x, rowY, basePos.z);
+
+                Flask existing = SpawnedFlasks[flaskListIndex];
+                if (existing != null)
+                    existing.transform.position = targetPos;
+            }
+
+            // 2) Создаём новую пустую колбу как последний элемент ряда
+            int newIndexInRow = currentRowCountAfterAdd - 1;
+            float newX = startXAfterAdd + newIndexInRow * spacingX;
+            Vector3 newSpawnPos = new Vector3(newX, rowY, basePos.z);
+
+            Flask newFlask = Instantiate(_flaskPrefab, newSpawnPos, Quaternion.identity, _startCreateFlasksPoint.parent);
+            SpawnedFlasks.Add(newFlask);
+            newFlask.OnFilled += OnFilledFlask;
+
+            // Пустая колба — без добавления предметов
+        }
+
+        public bool CanCreateFlask()
+        {
+            return SpawnedFlasks.Count < _generationSettings.MaxFlasksPerLevel;
+        }
+
         /// <summary>
         /// Создаёт визуальное представление уровня по данным <see cref="LevelData"/>.
         /// Максимум 3 колбы в ряд. Если больше, начинается новый ряд выше на _spawnRowOffsetY.
@@ -396,6 +471,7 @@ namespace _Project.Scripts.FlaskSequence
 
                 created += inRow;
                 row++;
+                _currentSpawnFlasksRow++;
             }
 
             LevelCreated?.Invoke(levelData);
@@ -447,6 +523,8 @@ namespace _Project.Scripts.FlaskSequence
             }
 
             SpawnedFlasks.Clear();
+
+            _currentSpawnFlasksRow = 0;
         }
 
         private Item FindItemPrefab(string fruitName)

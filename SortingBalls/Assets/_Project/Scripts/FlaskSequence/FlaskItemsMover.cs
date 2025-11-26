@@ -102,14 +102,21 @@ namespace _Project.Scripts.FlaskSequence
                 }
                 else if (_currentFlask != flask)
                 {
+                    MoveDownFlask(_currentFlask);
                     if (TryMoveItems(_currentFlask, flask))
                     {
                         MovesInLevel.Push(new Move(_currentFlask, flask));
 
-                        MoveDownFlask(_currentFlask);
                         _currentFlask = null;
-                        return;
                     }
+                    else
+                    {
+                        MoveDownFlask(_currentFlask);
+                        _currentFlask = flask;
+                        MoveUpFlask(_currentFlask);
+                    }
+
+                    return;
                 }
             }
 
