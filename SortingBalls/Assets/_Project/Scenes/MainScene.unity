@@ -545,11 +545,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2908986012658452415, guid: b51d297ecbaeacb46b2e00925993671b, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: 120
       objectReference: {fileID: 0}
     - target: {fileID: 2908986012658452415, guid: b51d297ecbaeacb46b2e00925993671b, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 100
+      value: 110
       objectReference: {fileID: 0}
     - target: {fileID: 2908986012658452415, guid: b51d297ecbaeacb46b2e00925993671b, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -2060,7 +2060,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 789898664853675132, guid: 8be0abc73b53eaa489788ded159e40c9, type: 3}
       propertyPath: m_AnchorMax.x
-      value: 0
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 789898664853675132, guid: 8be0abc73b53eaa489788ded159e40c9, type: 3}
       propertyPath: m_AnchorMax.y
@@ -2068,7 +2068,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 789898664853675132, guid: 8be0abc73b53eaa489788ded159e40c9, type: 3}
       propertyPath: m_AnchorMin.x
-      value: 0
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 789898664853675132, guid: 8be0abc73b53eaa489788ded159e40c9, type: 3}
       propertyPath: m_AnchorMin.y
@@ -2112,11 +2112,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 789898664853675132, guid: 8be0abc73b53eaa489788ded159e40c9, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 100
+      value: -120
       objectReference: {fileID: 0}
     - target: {fileID: 789898664853675132, guid: 8be0abc73b53eaa489788ded159e40c9, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 100
+      value: 110
       objectReference: {fileID: 0}
     - target: {fileID: 789898664853675132, guid: 8be0abc73b53eaa489788ded159e40c9, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x

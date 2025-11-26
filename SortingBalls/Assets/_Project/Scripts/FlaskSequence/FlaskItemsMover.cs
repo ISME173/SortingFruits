@@ -46,10 +46,13 @@ namespace _Project.Scripts.FlaskSequence
 
         public bool TryCancelLastMove()
         {
-            if (CanCancelLastMove() == false)
+            Move lastMove = MovesInLevel.Peek();
+
+            if (CanCancelLastMove() == false ||
+                (UsingFilling.Contains(lastMove.EndFlask) || UsingFilling.Contains(lastMove.StartFlask)))
                 return false;
 
-            Move lastMove = MovesInLevel.Pop();
+            MovesInLevel.Pop();
 
             return TryMoveItems(lastMove.EndFlask, lastMove.StartFlask, true);
         }
