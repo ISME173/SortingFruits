@@ -5,11 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
-using static UnityEngine.Rendering.DebugUI.Table;
 
 namespace _Project.Scripts.FlaskSequence
 {
@@ -17,11 +15,6 @@ namespace _Project.Scripts.FlaskSequence
     {
         private readonly List<LevelData> AllLevels = new List<LevelData>();
         private readonly List<Flask> SpawnedFlasks = new List<Flask>();
-
-        // Хранит ключи уровней в порядке загрузки (первым будет сохранённый уровень, если есть)
-        private List<string> _orderedGeneratedKeys = null;
-
-        // Ключи загруженных уровней (соответствуют элементам AllLevels по индексу)
         private readonly List<string> _loadedLevelKeys = new List<string>();
 
         private const string SaveKey_CurrentLevel = "FlaskSequence_LastPlayedLevelKey";
@@ -46,8 +39,9 @@ namespace _Project.Scripts.FlaskSequence
         private ISaves _saves;
         private int _currentLevelIndex = -1;
         private bool _allLevelsLoaded = false;
-        private bool _forceReloadGeneration; // НОВОЕ
+        private bool _forceReloadGeneration;
         private int _currentSpawnFlasksRow = 1;
+        private List<string> _orderedGeneratedKeys = null;
 
         public event Action<LevelData> LevelCreated, LevelCompleted, LevelLoaded;
 
@@ -59,10 +53,8 @@ namespace _Project.Scripts.FlaskSequence
 
         private async void Awake()
         {
-            // Читаем флаг принудительной перезагрузки
             _forceReloadGeneration = _generationSettings != null && _generationSettings.ForceReloadOnNextPlay;
 
-            // Построим локальный порядок ключей уровней: сохранённый ключ — первый (если есть и не принудительная перезагрузка)
             BuildOrderedGeneratedKeys();
 
             await LoadFirstLevelAndCreateView();
@@ -115,10 +107,9 @@ namespace _Project.Scripts.FlaskSequence
             {
                 if (_saves.HasKey(SaveKey_CurrentLevel))
                 {
-                    string savedKey = _saves.GetString(SaveKey_CurrentLevel, string.Empty);
+                    string savedKey = _saves.GetString(SaveKey_CurrentLevel);
                     if (!string.IsNullOrEmpty(savedKey) && original.Contains(savedKey))
                     {
-                        // Перемещаем сохранённый ключ на первую позицию, сохраняя порядок остальных
                         _orderedGeneratedKeys.Remove(savedKey);
                         _orderedGeneratedKeys.Insert(0, savedKey);
                     }
@@ -144,7 +135,7 @@ namespace _Project.Scripts.FlaskSequence
             {
                 AllLevels.Add(level);
                 _loadedLevelKeys.Add(firstKey);
-                _currentLevelIndex = 0;
+                _currentLevelIndex = level.LevelIndex;
                 CreateLevelView(level);
 
                 // Сохраняем текущий уровень в ISaves
@@ -278,6 +269,8 @@ namespace _Project.Scripts.FlaskSequence
             }
 
             _currentLevelIndex = nextIndex;
+            SetLevelStateByIndex(_currentLevelIndex, LevelState.Opened);
+
             CreateLevelView(AllLevels[_currentLevelIndex]);
 
             // Сохраняем выбранный текущий уровень
@@ -304,6 +297,7 @@ namespace _Project.Scripts.FlaskSequence
             }
 
             _currentLevelIndex = index;
+
             CreateLevelView(AllLevels[_currentLevelIndex]);
 
             // Сохраняем выбранный текущий уровень
@@ -482,8 +476,6 @@ namespace _Project.Scripts.FlaskSequence
             if (SpawnedFlasks.All(flask => flask.IsFilled || flask.IsEmpty))
             {
                 Debug.Log($"Level {_currentLevelIndex + 1} completed!");
-                LevelCompleted?.Invoke(AllLevels[_currentLevelIndex]);
-
                 if (_flaskItemsMover.IsMovingAnyItem)
                 {
                     _flaskItemsMover.OnAnyItemMovingEnd += OnAnyItemMovingEnd;
@@ -491,8 +483,7 @@ namespace _Project.Scripts.FlaskSequence
                 else
                 {
                     SetLevelStateByIndex(_currentLevelIndex, LevelState.Completed);
-                    LoadNextLevel();
-                    SetLevelStateByIndex(_currentLevelIndex, LevelState.Opened);
+                    LevelCompleted?.Invoke(AllLevels[_currentLevelIndex]);
                 }
 
                 void OnAnyItemMovingEnd()
@@ -500,8 +491,7 @@ namespace _Project.Scripts.FlaskSequence
                     _flaskItemsMover.OnAnyItemMovingEnd -= OnAnyItemMovingEnd;
 
                     SetLevelStateByIndex(_currentLevelIndex, LevelState.Completed);
-                    LoadNextLevel();
-                    SetLevelStateByIndex(_currentLevelIndex, LevelState.Opened);
+                    LevelCompleted?.Invoke(AllLevels[_currentLevelIndex]);
                 }
             }
         }

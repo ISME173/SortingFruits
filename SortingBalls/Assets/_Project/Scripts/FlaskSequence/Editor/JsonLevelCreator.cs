@@ -272,7 +272,7 @@ namespace _Project.Scripts.FlaskSequence.Editor
                 _settings.LastGenerationTimestamp = DateTime.UtcNow.Ticks;
                 _settings.ForceReloadOnNextPlay = true;
 
-                for (int levelIndex = 1; levelIndex <= _levelsToGenerate; levelIndex++)
+                for (int levelIndex = 0; levelIndex <= _levelsToGenerate; levelIndex++)
                 {
                     LevelData data = TryGenerateLevel(levelIndex);
                     if (data == null)
@@ -337,7 +337,8 @@ namespace _Project.Scripts.FlaskSequence.Editor
 
         private LevelData TryGenerateLevel(int levelIndex)
         {
-            if (_settings == null) return null;
+            if (_settings == null)
+                return null;
 
             for (int attempt = 1; attempt <= _settings.MaxGenerationAttemptsPerLevel; attempt++)
             {

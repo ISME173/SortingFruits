@@ -34,6 +34,7 @@ MonoBehaviour:
   AvoidAlmostSolved: 1
   BreakSolvedFlasks: 1
   GeneratedLevelKeys:
+  - Level_0
   - Level_1
   - Level_2
   - Level_3
@@ -55,5 +56,5 @@ MonoBehaviour:
   - Level_19
   - Level_20
   MaxFlasksPerLevel: 10
-  LastGenerationTimestamp: 638997083238438562
+  LastGenerationTimestamp: 638999641849275813
   ForceReloadOnNextPlay: 0

@@ -5,20 +5,20 @@
     [
       "Banana",
       "Apple",
+      "Orange",
+      "Apple"
+    ],
+    [
+      "Banana",
       "Apple",
+      "Banana",
       "Orange"
     ],
     [
+      "Orange",
+      "Orange",
       "Apple",
-      "Banana",
-      "Orange",
       "Banana"
-    ],
-    [
-      "Banana",
-      "Orange",
-      "Orange",
-      "Apple"
     ],
     []
   ],

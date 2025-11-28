@@ -53,17 +53,24 @@ namespace _Project.Scripts.Levels
 
         private void OnLevelButtonDown(int levelNumber)
         {
+            if (levelNumber - 1 == _levelCreator.CurrentLevelIndex)
+            {
+                _levelCreator.ReloadCurrentLevel();
+                return;
+            }
+
+            LevelsView.Hide();
             _levelCreator.LoadLevelByIndex(levelNumber - 1);
         }
 
         private void OnLevelCompleted(LevelData levelData)
         {
-            LevelsView.CompleteLevel(levelData.LevelIndex);
+            LevelsView.CompleteLevel(levelData.LevelIndex + 1);
         }
 
         private void OnLevelCreated(LevelData levelData)
         {
-            LevelsView.OpenLevel(levelData.LevelIndex);
+            LevelsView.OpenLevel(levelData.LevelIndex + 1);
         }
 
         private void OnLevelLoaded(LevelData levelData)
@@ -72,13 +79,13 @@ namespace _Project.Scripts.Levels
             switch (levelState)
             {
                 case LevelState.Opened:
-                    LevelsView.OpenLevel(levelData.LevelIndex);
+                    LevelsView.OpenLevel(levelData.LevelIndex + 1);
                     break;
                 case LevelState.Locked:
-                    LevelsView.LockLevel(levelData.LevelIndex);
+                    LevelsView.LockLevel(levelData.LevelIndex + 1);
                     break;
                 case LevelState.Completed:
-                    LevelsView.CompleteLevel(levelData.LevelIndex);
+                    LevelsView.CompleteLevel(levelData.LevelIndex + 1);
                     break;
             }
         }
