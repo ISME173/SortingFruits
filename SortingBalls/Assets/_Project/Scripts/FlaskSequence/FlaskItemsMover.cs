@@ -52,6 +52,9 @@ namespace _Project.Scripts.FlaskSequence
                 (UsingFilling.Contains(lastMove.EndFlask) || UsingFilling.Contains(lastMove.StartFlask)))
                 return false;
 
+            if (lastMove.EndFlask.IsFilled || lastMove.StartFlask.IsFilled)
+                return false;
+
             MovesInLevel.Pop();
 
             return TryMoveItems(lastMove.EndFlask, lastMove.StartFlask, true);

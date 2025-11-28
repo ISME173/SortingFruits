@@ -326,49 +326,59 @@ namespace _Project.Scripts.FlaskSequence
             float spacingX = _spawnOffsetBetweenFlasks;
             float spacingY = _spawnRowOffsetY;
 
-            // Текущие данные по ряду до добавления новой колбы
             int totalBeforeAdd = SpawnedFlasks.Count;
-            int rowIndex = totalBeforeAdd / _flasksCountInRow;               // 0-based
-            int indexInRowBeforeAdd = totalBeforeAdd % _flasksCountInRow;    // 0..._flasksCountInRow-1
 
-            bool isNewRow = indexInRowBeforeAdd == 0; // если в текущем ряду 0 элементов, добавление начнет новый ряд
+            // Определяем ряд назначения для новой колбы (чередуем по парам: 2 в ряд 0, 2 в ряд 1, ...)
+            int pairIndex = totalBeforeAdd / 2;
+            int targetRow = pairIndex % 2; // 0 или 1
 
-            // Если начинается новый ряд — обновим счётчик рядов
-            if (isNewRow)
-                _currentSpawnFlasksRow++;
-
-            // Каким станет количество элементов в текущем ряду после добавления
-            int rowStart = rowIndex * _flasksCountInRow;
-            int currentRowCountBeforeAdd = totalBeforeAdd - rowStart;        // сколько уже есть в ряду (0.._flasksCountInRow-1)
-            int currentRowCountAfterAdd = Mathf.Min(currentRowCountBeforeAdd + 1, _flasksCountInRow);
-
-            // Центрирование: вычислим стартовую X-точку для ряда после добавления
-            float startXAfterAdd = basePos.x - 0.5f * spacingX * (currentRowCountAfterAdd - 1);
-            float rowY = basePos.y + rowIndex * spacingY;
-
-            // 1) Перепозиционируем 이미 созданные колбы текущего ряда для центрирования
-            for (int i = 0; i < currentRowCountBeforeAdd; i++)
+            // Считаем, сколько колб уже находится в каждом ряду по текущему правилу распределения
+            int row0Count = 0;
+            int row1Count = 0;
+            for (int i = 0; i < totalBeforeAdd; i++)
             {
-                int flaskListIndex = rowStart + i;
-                if (flaskListIndex < 0 || flaskListIndex >= SpawnedFlasks.Count)
-                    break;
-
-                float x = startXAfterAdd + i * spacingX;
-                Vector3 targetPos = new Vector3(x, rowY, basePos.z);
-
-                Flask existing = SpawnedFlasks[flaskListIndex];
-                if (existing != null)
-                    existing.transform.position = targetPos;
+                int pi = i / 2;
+                int r = pi % 2;
+                if (r == 0) row0Count++; else row1Count++;
             }
 
-            // 2) Создаём новую пустую колбу как последний элемент ряда
-            int newIndexInRow = currentRowCountAfterAdd - 1;
-            float newX = startXAfterAdd + newIndexInRow * spacingX;
+            // Текущие данные о рядах
+            int currentRowCountBeforeAdd = (targetRow == 0) ? row0Count : row1Count;
+            int currentRowCountAfterAdd = currentRowCountBeforeAdd + 1;
+
+            // Центрирование: стартовая X-точка для выбранного ряда после добавления
+            float startXAfterAdd = basePos.x - 0.5f * spacingX * (currentRowCountAfterAdd - 1);
+            float rowY = basePos.y + targetRow * spacingY;
+
+            // 1) Перепозиционируем уже созданные колбы выбранного ряда для центрирования
+            int indexInRow = 0;
+            for (int i = 0; i < SpawnedFlasks.Count; i++)
+            {
+                int pi = i / 2;
+                int r = pi % 2;
+                if (r != targetRow)
+                    continue;
+
+                float x = startXAfterAdd + indexInRow * spacingX;
+                Vector3 targetPos = new Vector3(x, rowY, basePos.z);
+
+                Flask existing = SpawnedFlasks[i];
+                if (existing != null)
+                    existing.transform.position = targetPos;
+
+                indexInRow++;
+            }
+
+            // 2) Создаём новую пустую колбу как последний элемент выбранного ряда
+            float newX = startXAfterAdd + (currentRowCountAfterAdd - 1) * spacingX;
             Vector3 newSpawnPos = new Vector3(newX, rowY, basePos.z);
 
             Flask newFlask = Instantiate(_flaskPrefab, newSpawnPos, Quaternion.identity, _startCreateFlasksPoint.parent);
             SpawnedFlasks.Add(newFlask);
             newFlask.OnFilled += OnFilledFlask;
+
+            // Обновим служебный счётчик ряда, если нужно (теперь максимум 2 ряда: 0 и 1)
+            _currentSpawnFlasksRow = Math.Max(_currentSpawnFlasksRow, targetRow + 1);
 
             // Пустая колба — без добавления предметов
         }
@@ -380,8 +390,8 @@ namespace _Project.Scripts.FlaskSequence
 
         /// <summary>
         /// Создаёт визуальное представление уровня по данным <see cref="LevelData"/>.
-        /// Максимум 3 колбы в ряд. Если больше, начинается новый ряд выше на _spawnRowOffsetY.
-        /// 每个行相对于_startCreateFlasksPoint居中。
+        /// Новая логика: колбы спавнятся попарно, чередуя ряды (2 в ряд 0, 2 в ряд 1, далее снова 2 в ряд 0 и т.д.).
+        /// Каждый ряд центрируется относительно _startCreateFlasksPoint。
         /// </summary>
         private void CreateLevelView(LevelData levelData)
         {
@@ -407,65 +417,89 @@ namespace _Project.Scripts.FlaskSequence
             float spacingX = _spawnOffsetBetweenFlasks;
             float spacingY = _spawnRowOffsetY;
 
-            int created = 0;
-            int row = 0;
+            // Текущие счётчики по рядам
+            int row0Count = 0;
+            int row1Count = 0;
 
-            while (created < total)
+            for (int idx = 0; idx < total; idx++)
             {
-                int remaining = total - created;
-                int inRow = remaining < _flasksCountInRow ? remaining : _flasksCountInRow;
+                // Определяем ряд для текущей колбы
+                int pairIndex = idx / 2;
+                int row = pairIndex % 2; // 0 или 1
 
-                float startX = basePos.x - 0.5f * spacingX * (inRow - 1);
+                // Текущее количество в этом ряду до добавления
+                int currentRowCountBeforeAdd = (row == 0) ? row0Count : row1Count;
+                int currentRowCountAfterAdd = currentRowCountBeforeAdd + 1;
+
+                // Центрирование выбранного ряда с учётом добавления
+                float startXAfterAdd = basePos.x - 0.5f * spacingX * (currentRowCountAfterAdd - 1);
                 float y = basePos.y + row * spacingY;
 
-                for (int i = 0; i < inRow; i++)
+                // Перепозиционируем уже созданные колбы этого ряда для центрирования
+                int indexInRow = 0;
+                for (int j = 0; j < SpawnedFlasks.Count; j++)
                 {
-                    int flaskIndex = created + i;
-                    float x = startX + i * spacingX;
-                    Vector3 spawnPos = new Vector3(x, y, basePos.z);
-
-                    Flask flaskInstance = Instantiate(_flaskPrefab, spawnPos, Quaternion.identity, _startCreateFlasksPoint.parent);
-                    SpawnedFlasks.Add(flaskInstance);
-
-                    flaskInstance.OnFilled += OnFilledFlask;
-
-                    List<string> fruitsInFlask = levelData.Flasks[flaskIndex];
-                    if (fruitsInFlask == null || fruitsInFlask.Count == 0)
+                    int pj = j / 2;
+                    int rj = pj % 2;
+                    if (rj != row)
                         continue;
 
-                    for (int j = 0; j < fruitsInFlask.Count; j++)
-                    {
-                        string fruitName = fruitsInFlask[j];
-                        Item prefab = FindItemPrefab(fruitName);
-                        if (prefab == null)
-                        {
-                            Debug.LogWarning($"[LevelCreator] Не найден префаб фрукта '{fruitName}'. Пропуск.");
-                            continue;
-                        }
+                    float xj = startXAfterAdd + indexInRow * spacingX;
+                    Vector3 posj = new Vector3(xj, y, basePos.z);
 
-                        Transform slotTransform = flaskInstance.GetFirstEmptySlotTransform();
-                        if (slotTransform == null)
-                        {
-                            Debug.LogWarning($"[LevelCreator] Нет свободного слота в колбе {flaskIndex + 1} при добавлении '{fruitName}'.");
-                            break;
-                        }
+                    Flask existing = SpawnedFlasks[j];
+                    if (existing != null)
+                        existing.transform.position = posj;
 
-                        Item itemInstance = Instantiate(prefab, slotTransform.position, Quaternion.identity);
-                        itemInstance.transform.SetParent(slotTransform, worldPositionStays: false);
-                        itemInstance.transform.localPosition = Vector3.zero;
-
-                        if (!flaskInstance.TryAddItem(itemInstance))
-                        {
-                            Debug.LogWarning($"[LevelCreator] TryAddItem вернул false для '{fruitName}' в колбе {flaskIndex + 1}.");
-                            Destroy(itemInstance.gameObject);
-                            break;
-                        }
-                    }
+                    indexInRow++;
                 }
 
-                created += inRow;
-                row++;
-                _currentSpawnFlasksRow++;
+                // Позиция новой колбы как последний элемент ряда
+                float newX = startXAfterAdd + (currentRowCountAfterAdd - 1) * spacingX;
+                Vector3 spawnPos = new Vector3(newX, y, basePos.z);
+
+                // Создаём колбу
+                Flask flaskInstance = Instantiate(_flaskPrefab, spawnPos, Quaternion.identity, _startCreateFlasksPoint.parent);
+                SpawnedFlasks.Add(flaskInstance);
+                flaskInstance.OnFilled += OnFilledFlask;
+
+                // Обновляем счетчики рядов
+                if (row == 0) row0Count++; else row1Count++;
+                _currentSpawnFlasksRow = Math.Max(_currentSpawnFlasksRow, row + 1);
+
+                // Наполняем колбу предметами по данным уровня
+                List<string> fruitsInFlask = levelData.Flasks[idx];
+                if (fruitsInFlask == null || fruitsInFlask.Count == 0)
+                    continue;
+
+                for (int j = 0; j < fruitsInFlask.Count; j++)
+                {
+                    string fruitName = fruitsInFlask[j];
+                    Item prefab = FindItemPrefab(fruitName);
+                    if (prefab == null)
+                    {
+                        Debug.LogWarning($"[LevelCreator] Не найден префаб фрукта '{fruitName}'. Пропуск.");
+                        continue;
+                    }
+
+                    Transform slotTransform = flaskInstance.GetFirstEmptySlotTransform();
+                    if (slotTransform == null)
+                    {
+                        Debug.LogWarning($"[LevelCreator] Нет свободного слота в колбе {idx + 1} при добавлении '{fruitName}'.");
+                        break;
+                    }
+
+                    Item itemInstance = Instantiate(prefab, slotTransform.position, Quaternion.identity);
+                    itemInstance.transform.SetParent(slotTransform, worldPositionStays: false);
+                    itemInstance.transform.localPosition = Vector3.zero;
+
+                    if (!flaskInstance.TryAddItem(itemInstance))
+                    {
+                        Debug.LogWarning($"[LevelCreator] TryAddItem вернул false для '{fruitName}' в колбе {idx + 1}.");
+                        Destroy(itemInstance.gameObject);
+                        break;
+                    }
+                }
             }
 
             LevelCreated?.Invoke(levelData);
@@ -489,6 +523,12 @@ namespace _Project.Scripts.FlaskSequence
                 void OnAnyItemMovingEnd()
                 {
                     _flaskItemsMover.OnAnyItemMovingEnd -= OnAnyItemMovingEnd;
+
+                    for (int i = 0; i < SpawnedFlasks.Count; i++)
+                    {
+                        if (SpawnedFlasks[i].IsFilled)
+                            SpawnedFlasks[i].PlayVfxOnFilledEffect();
+                    }
 
                     SetLevelStateByIndex(_currentLevelIndex, LevelState.Completed);
                     LevelCompleted?.Invoke(AllLevels[_currentLevelIndex]);
