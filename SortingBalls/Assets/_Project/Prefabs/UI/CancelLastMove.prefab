@@ -103,6 +103,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7814249462180422443, guid: 0db9806c6b227fd449fe8b9953dac2d9, type: 3}
       insertIndex: -1
       addedObject: {fileID: 4602742288266371011}
+    - targetCorrespondingSourceObject: {fileID: 7814249462180422443, guid: 0db9806c6b227fd449fe8b9953dac2d9, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5351579981130826321}
   m_SourcePrefab: {fileID: 100100000, guid: 0db9806c6b227fd449fe8b9953dac2d9, type: 3}
 --- !u!114 &2131126657700694578 stripped
 MonoBehaviour:
@@ -115,6 +118,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!224 &2908986012658452415 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 8606237116755756720, guid: 0db9806c6b227fd449fe8b9953dac2d9, type: 3}
+  m_PrefabInstance: {fileID: 6859461975501701391}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &3693090409331368484 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7814249462180422443, guid: 0db9806c6b227fd449fe8b9953dac2d9, type: 3}
@@ -135,6 +143,36 @@ MonoBehaviour:
   _buttonForUse: {fileID: 2131126657700694578}
   _bonusesCountText: {fileID: 6027407881590191742}
   _startBonusesCount: 1
+  _bonusAnimation: {fileID: 5351579981130826321}
+  _timerWithoutTriggerDownForAnimate: 5
+--- !u!114 &5351579981130826321
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3693090409331368484}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf0d2f3d1b6270743b17a40e1686bb85, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _panelForAnimate: {fileID: 2908986012658452415}
+  _playOnAwake: 0
+  _showAnimationsSettings:
+    _time: 1
+    _ease: 5
+    _withLoop: 1
+    _loopCount: -1
+    _loopType: 3
+  _showedLocalScale: {x: 1.1, y: 1.1, z: 1}
+  _hideAnimationSettings:
+    _time: 1
+    _ease: 5
+    _withLoop: 1
+    _loopCount: -1
+    _loopType: 3
+  _hidedLocalScale: {x: 0.9, y: 0.9, z: 1}
 --- !u!114 &6027407881590191742 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 906371253148235633, guid: 0db9806c6b227fd449fe8b9953dac2d9, type: 3}

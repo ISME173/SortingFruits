@@ -11,6 +11,9 @@ namespace _Project.Scripts.FlaskSequence
         [SerializeField] private Transform _slotForSelectItems;
         [SerializeField] private List<ItemSlot> _itemSlots = new List<ItemSlot>();
 
+        [Header("VFX")]
+        [SerializeField] private ParticleSystem _onFilledEffect;
+
         public event Action OnFilled;
 
         public bool IsFilled { get; private set; } = false;
@@ -39,6 +42,11 @@ namespace _Project.Scripts.FlaskSequence
             }
 
             return false;
+        }
+
+        public void PlayVfxOnFilledEffect()
+        {
+            _onFilledEffect.Play();
         }
 
         public Item GetFirstItem()

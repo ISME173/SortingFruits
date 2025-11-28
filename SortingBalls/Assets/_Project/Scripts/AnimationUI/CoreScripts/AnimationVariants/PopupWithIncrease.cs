@@ -56,7 +56,7 @@ namespace AnimationsUI.CoreScripts.AnimationVariants
         {
             _hideAnimationHandle.TryCancel();
 
-            if (_showAnimationsSettings.WithLoop)
+            if (_showAnimationsSettings.WithLoop == false)
             {
                 _showAnimationHandle = LMotion.Create(_hidedLocalScale, _showedLocalScale, _showAnimationsSettings.Time)
                     .WithEase(_showAnimationsSettings.Ease)

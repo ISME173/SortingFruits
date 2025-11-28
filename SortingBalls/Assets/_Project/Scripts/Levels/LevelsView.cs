@@ -1,4 +1,5 @@
 using _Project.Scripts.FlaskSequence;
+using AnimationsUI.CoreScripts;
 using Reflex.Attributes;
 using System;
 using System.Collections.Generic;
@@ -12,8 +13,9 @@ namespace _Project.Scripts.Levels
         private readonly List<LevelButton> LevelButtons = new();
 
         [Header("References")]
-        [SerializeField] private RectTransform _parentForLevelButtons;
+        [SerializeField] private PopupAnimationPanelsSequence _levelsViewAnimation;
         [Space]
+        [SerializeField] private RectTransform _parentForLevelButtons;
         [SerializeField] private Button _closeLevelsViewButton;
         [SerializeField] private Button _openLevelsViewButton;
 
@@ -34,11 +36,12 @@ namespace _Project.Scripts.Levels
         public void Show()
         {
             gameObject.SetActive(true);
+            _levelsViewAnimation.Show(null);
         }
 
         public void Hide()
         {
-            gameObject.SetActive(false);
+            _levelsViewAnimation.Hide(() => gameObject.SetActive(false));
         }
 
         public void UpdateView(int levelsCount, int openedLevelsCount, int completedLevelsCount)

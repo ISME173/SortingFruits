@@ -35,7 +35,7 @@ namespace _Project.Scripts.Victory
 
         private void OnLevelCompleted(LevelData levelData)
         {
-            VictoryView.Show();
+            VictoryView.Show(_levelCreator.CurrentLevelIndex + 1);
         }
     }
 }

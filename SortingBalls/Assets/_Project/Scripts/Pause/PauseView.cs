@@ -1,3 +1,4 @@
+using AnimationsUI.CoreScripts;
 using Reflex.Attributes;
 using System;
 using UnityEngine;
@@ -8,6 +9,8 @@ namespace _Project.Scripts.Pause
     public class PauseView : MonoBehaviour
     {
         [Header("References")]
+        [SerializeField] private PopupAnimationPanelsSequence _pauseViewAnimations;
+        [Space]
         [SerializeField] private Button _soundSwitchButton;
         [SerializeField] private Button _musicSwitchButton;
         [Space]
@@ -23,11 +26,12 @@ namespace _Project.Scripts.Pause
         public void Show()
         {
             gameObject.SetActive(true);
+            _pauseViewAnimations.Show(null);
         }
 
         public void Hide()
         {
-            gameObject.SetActive(false);
+            _pauseViewAnimations.Hide(() => gameObject.SetActive(false));
         }
 
         [Inject]

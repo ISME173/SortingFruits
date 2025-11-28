@@ -190,6 +190,9 @@ namespace _Project.Scripts.FlaskSequence
                         MoveOneItem(itemsToMove[i], () =>
                         {
                             UsingFilling.Remove(endFlask);
+
+                            if (endFlask.IsFilled)
+                                endFlask.PlayVfxOnFilledEffect();
                         });
                     }
                     else

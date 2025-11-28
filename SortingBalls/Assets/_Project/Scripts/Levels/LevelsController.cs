@@ -56,6 +56,7 @@ namespace _Project.Scripts.Levels
             if (levelNumber - 1 == _levelCreator.CurrentLevelIndex)
             {
                 _levelCreator.ReloadCurrentLevel();
+                LevelsView.Hide();
                 return;
             }
 

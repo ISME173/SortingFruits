@@ -2,6 +2,7 @@ using _Project.Scripts.FlaskSequence;
 using AnimationsUI.CoreScripts;
 using Reflex.Attributes;
 using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,11 +12,14 @@ namespace _Project.Scripts.Victory
     {
         [SerializeField] private Button _buttonContinue;
         [SerializeField] private PopupAnimationPanelsSequence _viewAnimation;
+        [SerializeField] private TextMeshProUGUI _levelNumberText;
 
         public event Action OnContinueButtonClick;
 
-        public void Show()
+        public void Show(int levelNumber)
         {
+            _levelNumberText.text = levelNumber.ToString();
+
             gameObject.SetActive(true);
             _viewAnimation.Show(null);
         }
