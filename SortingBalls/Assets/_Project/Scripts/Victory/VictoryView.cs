@@ -1,4 +1,5 @@
 using _Project.Scripts.Advertising;
+using _Project.Scripts.Audio;
 using _Project.Scripts.FlaskSequence;
 using _Project.Scripts.GameEvents;
 using _Project.Scripts.Saves;
@@ -13,9 +14,14 @@ namespace _Project.Scripts.Victory
 {
     public class VictoryView : MonoBehaviour
     {
+        [Header("View references")]
         [SerializeField] private Button _buttonContinue;
         [SerializeField] private PopupAnimationPanelsSequence _viewAnimation;
         [SerializeField] private TextMeshProUGUI _levelNumberText;
+
+        [Header("Sfx references")]
+        [SerializeField] private AudioEvent _buttonClick;
+        [SerializeField] private AudioEvent _victoryEffect;
 
         public event Action OnContinueButtonClick;
 
@@ -39,9 +45,9 @@ namespace _Project.Scripts.Victory
         }
 
         [Inject]
-        private void Initialize(VictoryController controller, LevelCreator levelCreator, IAdvertising advertising, IGameEvents gameEvents, ISaves saves)
+        private void Initialize(VictoryController controller, LevelCreator levelCreator, IAdvertising advertising, IGameEvents gameEvents, ISaves saves, IAudioService audioService)
         {
-            controller.Initialize(levelCreator, advertising, gameEvents, saves);
+            controller.Initialize(levelCreator, advertising, gameEvents, saves, audioService, _buttonClick, _victoryEffect);
 
             _buttonContinue.onClick.AddListener(() => OnContinueButtonClick?.Invoke());
         }

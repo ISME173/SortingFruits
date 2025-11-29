@@ -232,7 +232,8 @@ MonoBehaviour:
     _slotTransform: {fileID: 3330670063484875623}
   - Item: {fileID: 0}
     _slotTransform: {fileID: 1485820497944455201}
-  _onFilledEffect: {fileID: 3825527876937905230}
+  _onFilledVisualEffect: {fileID: 3825527876937905230}
+  _onFilledSoundEffect: {fileID: 11400000, guid: 37f200c504bf29443839b0b645bbc0cc, type: 2}
 --- !u!1 &7559928717425645452
 GameObject:
   m_ObjectHideFlags: 0

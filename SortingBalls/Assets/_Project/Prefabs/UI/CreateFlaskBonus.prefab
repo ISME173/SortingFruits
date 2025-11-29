@@ -129,12 +129,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 58e9c117c362a24458297cea3ad19f3b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _startBonusesCount: 3
+  _timerWithoutTriggerDownForAnimate: 5
   _buttonForUse: {fileID: 4556459320260383217}
   _bonusesCountText: {fileID: 8146207379884371389}
   _advImage: {fileID: 2174038328791973236}
-  _startBonusesCount: 3
   _bonusAnimation: {fileID: 5476770567994168258}
-  _timerWithoutTriggerDownForAnimate: 5
+  _buttonClick: {fileID: 11400000, guid: ac138ef131b35234ea840a5e57009c7a, type: 2}
 --- !u!114 &5476770567994168258
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f96b0d9fee971847828c222912c9faf, type: 3}
   m_Name: UiButtonClick
   m_EditorClassIdentifier: 
-  _clip: {fileID: 0}
+  _clip: {fileID: 8300000, guid: c447beb906553e340a6dfc1211f493b7, type: 3}
   _category: 2
   _volume: 1
   _pitch: 1

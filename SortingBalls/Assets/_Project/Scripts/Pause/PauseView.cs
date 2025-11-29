@@ -1,4 +1,5 @@
 using _Project.Scripts.Advertising;
+using _Project.Scripts.Audio;
 using _Project.Scripts.GameEvents;
 using AnimationsUI.CoreScripts;
 using Reflex.Attributes;
@@ -10,7 +11,7 @@ namespace _Project.Scripts.Pause
 {
     public class PauseView : MonoBehaviour
     {
-        [Header("References")]
+        [Header("View references")]
         [SerializeField] private PopupAnimationPanelsSequence _pauseViewAnimations;
         [Space]
         [SerializeField] private Button _soundSwitchButton;
@@ -20,6 +21,9 @@ namespace _Project.Scripts.Pause
         [SerializeField] private Button _openPauseViewButton;
         [Space]
         [SerializeField] private Button _openLevelsViewButton;
+
+        [Header("Sfx references")]
+        [SerializeField] private AudioEvent _buttonClickEvent;
 
         public event Action OnSoundSwitchClicked, OnMusicSwitchClicked;
         public event Action OnOpenPauseViewClicked, OnClosePauseViewClicked;
@@ -43,9 +47,9 @@ namespace _Project.Scripts.Pause
         }
 
         [Inject]
-        private void Initialize(PauseController pauseController, IAdvertising advertising, IGameEvents gameEvents)
+        private void Initialize(PauseController pauseController, IAdvertising advertising, IGameEvents gameEvents, IAudioService audioService)
         {
-            pauseController.Initialize(advertising, gameEvents);
+            pauseController.Initialize(advertising, gameEvents, audioService, _buttonClickEvent);
 
             _closePauseViewButton.onClick.AddListener(() => OnClosePauseViewClicked?.Invoke());
             _openPauseViewButton.onClick.AddListener(() => OnOpenPauseViewClicked?.Invoke());

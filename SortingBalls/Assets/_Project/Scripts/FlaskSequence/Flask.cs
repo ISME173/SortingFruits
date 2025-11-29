@@ -1,3 +1,4 @@
+using _Project.Scripts.Audio;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +13,12 @@ namespace _Project.Scripts.FlaskSequence
         [SerializeField] private List<ItemSlot> _itemSlots = new List<ItemSlot>();
 
         [Header("VFX")]
-        [SerializeField] private ParticleSystem _onFilledEffect;
+        [SerializeField] private ParticleSystem _onFilledVisualEffect;
+
+        [Header("SFX")]
+        [SerializeField] private AudioEvent _onFilledSoundEffect;
+
+        private IAudioService _audioService;
 
         public event Action OnFilled;
 
@@ -20,6 +26,11 @@ namespace _Project.Scripts.FlaskSequence
         public Transform SlotForSelectItems => _slotForSelectItems;
         public int FreeSlotsCount => _itemSlots.Where(slot => slot.Item == null).Count();
         public bool IsEmpty => _itemSlots.All(slot => slot.Item == null);
+
+        public void InjectAudioService(IAudioService audioService)
+        {
+            _audioService = audioService;
+        }
 
         public bool TryAddItem(Item item)
         {
@@ -46,7 +57,12 @@ namespace _Project.Scripts.FlaskSequence
 
         public void PlayVfxOnFilledEffect()
         {
-            _onFilledEffect.Play();
+            _onFilledVisualEffect.Play();
+        }
+
+        public void PlaySfxOnFilledEffect()
+        {
+            _audioService.PlayOneShot(_onFilledSoundEffect);
         }
 
         public Item GetFirstItem()

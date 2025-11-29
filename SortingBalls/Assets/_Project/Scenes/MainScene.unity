@@ -1169,7 +1169,9 @@ MonoBehaviour:
   _parentForLevelButtons: {fileID: 452540417}
   _closeLevelsViewButton: {fileID: 1879553218}
   _openLevelsViewButton: {fileID: 1338477965}
+  _restartLevelButton: {fileID: 1336223835}
   _levelButtonPrefab: {fileID: 1321606303158805769, guid: 49c7964627823e448baff5f3d9e64b4a, type: 3}
+  _buttonClick: {fileID: 11400000, guid: ac138ef131b35234ea840a5e57009c7a, type: 2}
 --- !u!114 &501735447
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1516,6 +1518,7 @@ MonoBehaviour:
   _closePauseViewButton: {fileID: 2077137267}
   _openPauseViewButton: {fileID: 819771838}
   _openLevelsViewButton: {fileID: 1338477965}
+  _buttonClickEvent: {fileID: 11400000, guid: ac138ef131b35234ea840a5e57009c7a, type: 2}
 --- !u!114 &580615640
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3608,6 +3611,8 @@ MonoBehaviour:
   _buttonContinue: {fileID: 897357512}
   _viewAnimation: {fileID: 1329471171}
   _levelNumberText: {fileID: 552415676}
+  _buttonClick: {fileID: 11400000, guid: ac138ef131b35234ea840a5e57009c7a, type: 2}
+  _victoryEffect: {fileID: 11400000, guid: 691b05f065fa4ef4d8f09b224e1e3f75, type: 2}
 --- !u!1 &1336223833
 GameObject:
   m_ObjectHideFlags: 0
@@ -3689,19 +3694,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1336223836}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 143332928}
-        m_TargetAssemblyTypeName: _Project.Scripts.FlaskSequence.LevelCreator, Assembly-CSharp
-        m_MethodName: ReloadCurrentLevel
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &1336223836
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4656,17 +4649,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _searchBindingModulesInOnValidate: 1
   _bindingModules:
-  - {fileID: 1910367878}
   - {fileID: 15416322}
   - {fileID: 589517470}
   - {fileID: 1010867488}
   - {fileID: 1101429350}
+  - {fileID: 1910367878}
   _readOnlyBindingModules:
-  - {fileID: 1910367878}
   - {fileID: 15416322}
   - {fileID: 589517470}
   - {fileID: 1010867488}
   - {fileID: 1101429350}
+  - {fileID: 1910367878}
 --- !u!1 &1700269444
 GameObject:
   m_ObjectHideFlags: 0

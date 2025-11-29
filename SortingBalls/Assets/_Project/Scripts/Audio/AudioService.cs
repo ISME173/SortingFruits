@@ -173,7 +173,7 @@ namespace _Project.Scripts.Audio
                 return;
 
             var pooled = GetFree();
-            pooled.CurrentEvent = audioEvent; // чтобы StopAllByCategory ловил и one-shot
+            pooled.CurrentEvent = audioEvent;
             pooled.Source.pitch = audioEvent.Pitch;
             pooled.Source.spatialBlend = 0;
 

@@ -1,4 +1,5 @@
 using _Project.Scripts.Advertising;
+using _Project.Scripts.Audio;
 using _Project.Scripts.FlaskSequence;
 using _Project.Scripts.GameEvents;
 using System;
@@ -12,6 +13,9 @@ namespace _Project.Scripts.Levels
         private LevelCreator _levelCreator;
         private IAdvertising _advertising;
         private IGameEvents _gameEvents;
+        private IAudioService _audioService;
+
+        private AudioEvent _buttonClick;
 
         public LevelsController(LevelsView levelsView)
         {
@@ -20,13 +24,16 @@ namespace _Project.Scripts.Levels
             LevelsView.OnCloseLevelsViewButtonClicked += OnCloseLevelsViewButtonClicked;
             LevelsView.OnOpenLevelsViewButtonClicked += OnOpenLevelsViewButtonClicked;
             LevelsView.OnLevelButtonClicked += OnLevelButtonDown;
+            LevelsView.OnRestartLevelButtonClicked += OnRestartLevelButtonClicked;
         }
 
-        public void Initialize(LevelCreator levelCreator, IAdvertising advertising, IGameEvents gameEvents)
+        public void Initialize(LevelCreator levelCreator, IAdvertising advertising, IGameEvents gameEvents, IAudioService audioService, AudioEvent buttonClick)
         {
             _levelCreator = levelCreator;
             _advertising = advertising;
             _gameEvents = gameEvents;
+            _audioService = audioService;
+            _buttonClick = buttonClick;
 
             _levelCreator.LevelCompleted += OnLevelCompleted;
             _levelCreator.LevelLoaded += OnLevelLoaded;
@@ -44,10 +51,16 @@ namespace _Project.Scripts.Levels
             _levelCreator.LevelCompleted -= OnLevelCompleted;
             _levelCreator.LevelLoaded -= OnLevelLoaded;
             _levelCreator.LevelCreated -= OnLevelCreated;
+            LevelsView.OnRestartLevelButtonClicked -= OnRestartLevelButtonClicked;
         }
 
         private void OnOpenLevelsViewButtonClicked()
         {
+            if (_advertising.CanShowInterstitial())
+                _advertising.ShowInterstitial(null, null);
+
+            _audioService.PlayOneShot(_buttonClick);
+
             LevelsView.UpdateView(_levelCreator.LevelsCount, _levelCreator.LoadedLevelsCount, 0);
             LevelsView.Show();
         }
@@ -57,6 +70,7 @@ namespace _Project.Scripts.Levels
             if (_advertising.CanShowInterstitial())
                 _advertising.ShowInterstitial(null, null);
 
+            _audioService.PlayOneShot(_buttonClick);
             LevelsView.Hide();
         }
 
@@ -65,6 +79,7 @@ namespace _Project.Scripts.Levels
             if (_advertising.CanShowInterstitial())
                 _advertising.ShowInterstitial(null, null);
 
+            _audioService.PlayOneShot(_buttonClick);
             _gameEvents.GameStart();
 
             if (levelNumber - 1 == _levelCreator.CurrentLevelIndex)
@@ -76,6 +91,12 @@ namespace _Project.Scripts.Levels
 
             LevelsView.Hide();
             _levelCreator.LoadLevelByIndex(levelNumber - 1);
+        }
+
+        private void OnRestartLevelButtonClicked()
+        {
+            _audioService.PlayOneShot(_buttonClick);
+            _levelCreator.ReloadCurrentLevel();
         }
 
         private void OnLevelCompleted(LevelData levelData)

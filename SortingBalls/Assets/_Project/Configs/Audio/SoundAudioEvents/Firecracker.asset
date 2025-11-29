@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f96b0d9fee971847828c222912c9faf, type: 3}
-  m_Name: ClickToFlaskSfx
+  m_Name: Firecracker
   m_EditorClassIdentifier: 
-  _clip: {fileID: 8300000, guid: 67881a790f9b8144e8877fc3cb1fc626, type: 3}
+  _clip: {fileID: 8300000, guid: 484d9ebe71a5a874dbfb1d9cebe4bc1f, type: 3}
   _category: 1
   _volume: 1
   _pitch: 1

@@ -1,4 +1,5 @@
-﻿using _Project.Scripts.Saves;
+﻿using _Project.Scripts.Audio;
+using _Project.Scripts.Saves;
 using Newtonsoft.Json;
 using Reflex.Attributes;
 using System;
@@ -37,6 +38,7 @@ namespace _Project.Scripts.FlaskSequence
 
         private FlaskItemsMover _flaskItemsMover;
         private ISaves _saves;
+        private IAudioService _audioService;
         private int _currentLevelIndex = -1;
         private bool _allLevelsLoaded = false;
         private bool _forceReloadGeneration;
@@ -413,6 +415,7 @@ namespace _Project.Scripts.FlaskSequence
             Vector3 newSpawnPos = new Vector3(newX, rowY, basePos.z);
 
             Flask newFlask = Instantiate(_flaskPrefab, newSpawnPos, Quaternion.identity, _startCreateFlasksPoint.parent);
+            newFlask.InjectAudioService(_audioService);
             SpawnedFlasks.Add(newFlask);
             newFlask.OnFilled += OnFilledFlask;
 
@@ -499,6 +502,7 @@ namespace _Project.Scripts.FlaskSequence
 
                 // Создаём колбу
                 Flask flaskInstance = Instantiate(_flaskPrefab, spawnPos, Quaternion.identity, _startCreateFlasksPoint.parent);
+                flaskInstance.InjectAudioService(_audioService);
                 SpawnedFlasks.Add(flaskInstance);
                 flaskInstance.OnFilled += OnFilledFlask;
 
@@ -556,6 +560,8 @@ namespace _Project.Scripts.FlaskSequence
                 else
                 {
                     SetLevelStateByIndex(_currentLevelIndex, LevelState.Completed);
+                    SaveLevelKey(_currentLevelIndex + 1);
+
                     LevelCompleted?.Invoke(AllLevels[_currentLevelIndex]);
                 }
 
@@ -563,13 +569,9 @@ namespace _Project.Scripts.FlaskSequence
                 {
                     _flaskItemsMover.OnAnyItemMovingEnd -= OnAnyItemMovingEnd;
 
-                    for (int i = 0; i < SpawnedFlasks.Count; i++)
-                    {
-                        if (SpawnedFlasks[i].IsFilled)
-                            SpawnedFlasks[i].PlayVfxOnFilledEffect();
-                    }
-
                     SetLevelStateByIndex(_currentLevelIndex, LevelState.Completed);
+                    SaveLevelKey(_currentLevelIndex + 1);
+
                     LevelCompleted?.Invoke(AllLevels[_currentLevelIndex]);
                 }
             }
@@ -627,11 +629,35 @@ namespace _Project.Scripts.FlaskSequence
             }
         }
 
+        private void SaveLevelKey(int levelIndex)
+        {
+            if (_saves == null)
+                return;
+
+            if (levelIndex < 0 || levelIndex >= _loadedLevelKeys.Count)
+                return;
+
+            try
+            {
+                string key = _loadedLevelKeys[levelIndex];
+                if (!string.IsNullOrEmpty(key))
+                {
+                    _saves.SetString(SaveKey_CurrentLevel, key);
+                    _saves.Save();
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[LevelCreator] Не удалось сохранить текущий ключ уровня: {ex.Message}");
+            }
+        }
+
         [Inject]
-        private void Initialize(ISaves saves, FlaskItemsMover flaskItemsMover)
+        private void Initialize(ISaves saves, FlaskItemsMover flaskItemsMover, IAudioService audioService)
         {
             _saves = saves;
             _flaskItemsMover = flaskItemsMover;
+            _audioService = audioService;
 
             // Rebuild ordered keys now that _saves is available (если Awake ещё не вызвано или для случаев тестирования)
             if (_orderedGeneratedKeys == null)

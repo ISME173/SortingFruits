@@ -195,7 +195,10 @@ namespace _Project.Scripts.FlaskSequence
                             UsingFilling.Remove(endFlask);
 
                             if (endFlask.IsFilled)
+                            {
+                                endFlask.PlaySfxOnFilledEffect();
                                 endFlask.PlayVfxOnFilledEffect();
+                            }
                         });
                     }
                     else

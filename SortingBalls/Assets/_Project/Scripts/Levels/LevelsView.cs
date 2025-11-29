@@ -1,4 +1,5 @@
 using _Project.Scripts.Advertising;
+using _Project.Scripts.Audio;
 using _Project.Scripts.FlaskSequence;
 using _Project.Scripts.GameEvents;
 using AnimationsUI.CoreScripts;
@@ -14,19 +15,23 @@ namespace _Project.Scripts.Levels
     {
         private readonly List<LevelButton> LevelButtons = new();
 
-        [Header("References")]
+        [Header("View  references")]
         [SerializeField] private PopupAnimationPanelsSequence _levelsViewAnimation;
         [Space]
         [SerializeField] private RectTransform _parentForLevelButtons;
         [SerializeField] private Button _closeLevelsViewButton;
         [SerializeField] private Button _openLevelsViewButton;
+        [SerializeField] private Button _restartLevelButton;
 
         [Header("Assets")]
         [SerializeField] private LevelButton _levelButtonPrefab;
 
+        [Header("Sfx references")]
+        [SerializeField] private AudioEvent _buttonClick;
+
         private GridLayoutGroup _grid;
 
-        public event Action OnCloseLevelsViewButtonClicked, OnOpenLevelsViewButtonClicked;
+        public event Action OnCloseLevelsViewButtonClicked, OnOpenLevelsViewButtonClicked, OnRestartLevelButtonClicked;
         public event Action<int> OnLevelButtonClicked;
 
         private void OnDestroy()
@@ -145,14 +150,15 @@ namespace _Project.Scripts.Levels
         }
 
         [Inject]
-        private void Initialize(LevelsController levelsController, LevelCreator levelCreator, IAdvertising advertising, IGameEvents gameEvents)
+        private void Initialize(LevelsController levelsController, LevelCreator levelCreator, IAdvertising advertising, IGameEvents gameEvents, IAudioService audioService)
         {
-            levelsController.Initialize(levelCreator, advertising, gameEvents);
+            levelsController.Initialize(levelCreator, advertising, gameEvents, audioService, _buttonClick);
 
             _grid ??= _parentForLevelButtons.GetComponent<GridLayoutGroup>();
 
             _closeLevelsViewButton.onClick.AddListener(() => OnCloseLevelsViewButtonClicked?.Invoke());
             _openLevelsViewButton.onClick.AddListener(() => OnOpenLevelsViewButtonClicked?.Invoke());
+            _restartLevelButton.onClick.AddListener(() => OnRestartLevelButtonClicked?.Invoke());
         }
     }
 }
