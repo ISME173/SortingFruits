@@ -34,7 +34,7 @@ namespace _Project.Scripts.FlaskSequence.Bonuses
 
         private void Awake()
         {
-            _bonusesCount = _startBonusesCount;
+            _bonusesCount = Saves.GetInt(GetSaveBonusesCountKey(), _startBonusesCount);
             _bonusesCountText.text = _bonusesCount.ToString();
 
             _advImage.gameObject.SetActive(_bonusesCount == 0);

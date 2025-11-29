@@ -1,6 +1,7 @@
 using _Project.Scripts.Advertising;
 using _Project.Scripts.FlaskSequence;
 using _Project.Scripts.GameEvents;
+using _Project.Scripts.Saves;
 using System;
 
 namespace _Project.Scripts.Victory
@@ -12,6 +13,7 @@ namespace _Project.Scripts.Victory
         private LevelCreator _levelCreator;
         private IGameEvents _gameEvents;
         private IAdvertising _advertising;
+        private ISaves _saves;
 
         public VictoryController(VictoryView victoryView)
         {
@@ -25,11 +27,12 @@ namespace _Project.Scripts.Victory
             _levelCreator.LevelCompleted -= OnLevelCompleted;
         }
 
-        public void Initialize(LevelCreator levelCreator, IAdvertising advertising, IGameEvents gameEvents)
+        public void Initialize(LevelCreator levelCreator, IAdvertising advertising, IGameEvents gameEvents, ISaves saves)
         {
             _levelCreator = levelCreator;
             _gameEvents = gameEvents;
             _advertising = advertising;
+            _saves = saves;
 
             _levelCreator.LevelCompleted += OnLevelCompleted;
         }
@@ -45,6 +48,8 @@ namespace _Project.Scripts.Victory
 
         private void OnLevelCompleted(LevelData levelData)
         {
+            _saves.Save();
+
             VictoryView.Show(_levelCreator.CurrentLevelIndex + 1, _gameEvents.GameStop);
         }
     }

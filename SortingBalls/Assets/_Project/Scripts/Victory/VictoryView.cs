@@ -1,6 +1,7 @@
 using _Project.Scripts.Advertising;
 using _Project.Scripts.FlaskSequence;
 using _Project.Scripts.GameEvents;
+using _Project.Scripts.Saves;
 using AnimationsUI.CoreScripts;
 using Reflex.Attributes;
 using System;
@@ -38,9 +39,9 @@ namespace _Project.Scripts.Victory
         }
 
         [Inject]
-        private void Initialize(VictoryController controller, LevelCreator levelCreator, IAdvertising advertising, IGameEvents gameEvents)
+        private void Initialize(VictoryController controller, LevelCreator levelCreator, IAdvertising advertising, IGameEvents gameEvents, ISaves saves)
         {
-            controller.Initialize(levelCreator, advertising, gameEvents);
+            controller.Initialize(levelCreator, advertising, gameEvents, saves);
 
             _buttonContinue.onClick.AddListener(() => OnContinueButtonClick?.Invoke());
         }

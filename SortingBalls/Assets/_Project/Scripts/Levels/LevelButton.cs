@@ -52,7 +52,7 @@ namespace _Project.Scripts.Levels
 
             _levelButtonState = LevelState.Opened;
 
-            _levelNumberText.enabled = false;
+            _levelNumberText.enabled = true;
             _button.interactable = false;
             _lockIcon.gameObject.SetActive(true);
             _completeIcon.gameObject.SetActive(false);
