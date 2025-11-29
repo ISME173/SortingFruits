@@ -17,6 +17,8 @@ namespace _Project.Scripts.FlaskSequence
 
         [Header("SFX")]
         [SerializeField] private AudioEvent _onFilledSoundEffect;
+        [SerializeField] private AudioEvent _onClickToFlaskSoundEffect;
+        [SerializeField] private AudioEvent _onMovedItemInFlaskEffect;
 
         private IAudioService _audioService;
 
@@ -63,6 +65,16 @@ namespace _Project.Scripts.FlaskSequence
         public void PlaySfxOnFilledEffect()
         {
             _audioService.PlayOneShot(_onFilledSoundEffect);
+        }
+
+        public void PlaySfxOnClickedToFlask()
+        {
+            _audioService.PlayOneShot(_onClickToFlaskSoundEffect);
+        }
+
+        public void PlaySfxOnMovedItemInFlask()
+        {
+            _audioService.PlayOneShot(_onMovedItemInFlaskEffect);
         }
 
         public Item GetFirstItem()

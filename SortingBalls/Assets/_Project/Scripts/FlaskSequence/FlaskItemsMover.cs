@@ -111,8 +111,6 @@ namespace _Project.Scripts.FlaskSequence
                     MoveDownFlask(_currentFlask);
                     if (TryMoveItems(_currentFlask, flask))
                     {
-                        MovesInLevel.Push(new Move(_currentFlask, flask));
-
                         _currentFlask = null;
                     }
                     else
@@ -194,6 +192,8 @@ namespace _Project.Scripts.FlaskSequence
                         {
                             UsingFilling.Remove(endFlask);
 
+                            MovesInLevel.Push(new Move(startFlask, endFlask));
+
                             if (endFlask.IsFilled)
                             {
                                 endFlask.PlaySfxOnFilledEffect();
@@ -242,6 +242,12 @@ namespace _Project.Scripts.FlaskSequence
                     .Append(LMotion.Create(p1, p2, MoveSettings.ItemsMoveTime)
                         .WithCancelOnError()
                         .WithEase(MoveSettings.ItemsMoveEase)
+                        .WithOnComplete(() =>
+                        {
+                            LMotion.Create(0, 1, MoveSettings.ItemsMoveTime + MoveSettings.OffsetForPlaySfxAfterItemMovedInSlot)
+                            .WithOnComplete(() => endFlask.PlaySfxOnMovedItemInFlask())
+                            .RunWithoutBinding();
+                        })
                         .BindToPosition(item.transform))
                     .Append(LMotion.Create(p2, p3, MoveSettings.ItemsMoveTime)
                         .WithCancelOnError()
@@ -257,6 +263,7 @@ namespace _Project.Scripts.FlaskSequence
                             }
 
                             item.transform.SetParent(firstEmptySlot, true);
+                            item.transform.localPosition = Vector3.zero;
                             callback?.Invoke();
                         })
                         .Bind((progress) =>
@@ -280,6 +287,8 @@ namespace _Project.Scripts.FlaskSequence
         {
             if (flask != null)
             {
+                flask.PlaySfxOnClickedToFlask();
+
                 if (MovingFlasks.TryGetValue(flask, out MotionHandle motionHandle))
                 {
                     motionHandle.TryCancel();
@@ -309,6 +318,8 @@ namespace _Project.Scripts.FlaskSequence
         {
             if (flask != null)
             {
+                flask.PlaySfxOnClickedToFlask();
+
                 if (MovingFlasks.TryGetValue(flask, out MotionHandle motionHandle))
                 {
                     motionHandle.TryCancel();
@@ -359,6 +370,8 @@ namespace _Project.Scripts.FlaskSequence
             [SerializeField, Min(0)] private float _itemsMoveTime;
             [SerializeField] private Ease _itemsMoveEase;
             [SerializeField, Min(0)] private int _millisecondsDelayBetweenMoveItems;
+            [Space]
+            [SerializeField] private float _offsetForPlaySfxAfterItemMovedInSlot;
 
             [Header("Move flask")]
             [SerializeField, Min(0)] private float _frinkMoveTime;
@@ -367,6 +380,8 @@ namespace _Project.Scripts.FlaskSequence
 
             public float ItemsMoveTime => _itemsMoveTime;
             public Ease ItemsMoveEase => _itemsMoveEase;
+
+            public float OffsetForPlaySfxAfterItemMovedInSlot => _offsetForPlaySfxAfterItemMovedInSlot;  
 
             public float FrinkMoveTime => _frinkMoveTime;
             public Ease FrinkMoveEase => _frinkMoveEase;

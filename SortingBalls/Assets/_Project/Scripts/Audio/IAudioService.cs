@@ -9,7 +9,12 @@ namespace _Project.Scripts.Audio
         void PlayOneShot(AudioEvent audioEvent);
         void Stop(AudioEvent audioEvent);
         void StopAllByCategory(AudioCategory category);
-        void SetCategoryVolume(AudioCategory category, float volume); // 0..1
+
+        void SetCategoryVolume(AudioCategory category, float volume);
         float GetCategoryVolume(AudioCategory category);
+
+        // NEW: временное заглушение категории (не влияет на сохранённую громкость)
+        void SetCategoryMuted(AudioCategory category, bool muted);
+        bool GetCategoryMuted(AudioCategory category);
     }
 }

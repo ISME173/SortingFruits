@@ -1,6 +1,7 @@
 using _Project.Scripts.Advertising;
 using _Project.Scripts.Audio;
 using _Project.Scripts.GameEvents;
+using _Project.Scripts.Saves;
 using AnimationsUI.CoreScripts;
 using Reflex.Attributes;
 using System;
@@ -21,9 +22,20 @@ namespace _Project.Scripts.Pause
         [SerializeField] private Button _openPauseViewButton;
         [Space]
         [SerializeField] private Button _openLevelsViewButton;
+        [Space]
+        [SerializeField] private Image _soundButtonImage;
+        [SerializeField] private Image _musicButtonImage;
+
+        [Header("Assets")]
+        [SerializeField] private Sprite _soundOnSprite;
+        [SerializeField] private Sprite _soundOffSprite;
+        [Space]
+        [SerializeField] private Sprite _musicOnSprite;
+        [SerializeField] private Sprite _musicOffSprite;
 
         [Header("Sfx references")]
         [SerializeField] private AudioEvent _buttonClickEvent;
+        [SerializeField] private AudioEvent _backgroundMusic;
 
         public event Action OnSoundSwitchClicked, OnMusicSwitchClicked;
         public event Action OnOpenPauseViewClicked, OnClosePauseViewClicked;
@@ -46,10 +58,20 @@ namespace _Project.Scripts.Pause
             });
         }
 
-        [Inject]
-        private void Initialize(PauseController pauseController, IAdvertising advertising, IGameEvents gameEvents, IAudioService audioService)
+        public void SetSoundActive(bool active)
         {
-            pauseController.Initialize(advertising, gameEvents, audioService, _buttonClickEvent);
+            _soundButtonImage.sprite = active ? _soundOnSprite : _soundOffSprite;
+        }
+
+        public void SetMusicActive(bool active)
+        {
+            _musicButtonImage.sprite = active ? _musicOnSprite : _musicOffSprite;
+        }
+
+        [Inject]
+        private void Initialize(PauseController pauseController, IAdvertising advertising, ISaves saves, IGameEvents gameEvents, IAudioService audioService)
+        {
+            pauseController.Initialize(advertising, gameEvents, saves, audioService, _buttonClickEvent, _backgroundMusic);
 
             _closePauseViewButton.onClick.AddListener(() => OnClosePauseViewClicked?.Invoke());
             _openPauseViewButton.onClick.AddListener(() => OnOpenPauseViewClicked?.Invoke());

@@ -1518,7 +1518,14 @@ MonoBehaviour:
   _closePauseViewButton: {fileID: 2077137267}
   _openPauseViewButton: {fileID: 819771838}
   _openLevelsViewButton: {fileID: 1338477965}
+  _soundButtonImage: {fileID: 671727000}
+  _musicButtonImage: {fileID: 1148766036}
+  _soundOnSprite: {fileID: 21300000, guid: bfdacd457c57048119f43b9f5b93bb66, type: 3}
+  _soundOffSprite: {fileID: 21300000, guid: aecd5bee24f6d4d1f86562cc0dc54dcd, type: 3}
+  _musicOnSprite: {fileID: 21300000, guid: 39cbd04ad4d0b4c0cb8ff467bf96d160, type: 3}
+  _musicOffSprite: {fileID: 21300000, guid: 8eead3d70d63c44829060d9ec5d9819b, type: 3}
   _buttonClickEvent: {fileID: 11400000, guid: ac138ef131b35234ea840a5e57009c7a, type: 2}
+  _backgroundMusic: {fileID: 11400000, guid: fa4412948b82764449d2eb845d1a1b5a, type: 2}
 --- !u!114 &580615640
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2923,6 +2930,7 @@ MonoBehaviour:
     _itemsMoveTime: 0.3
     _itemsMoveEase: 5
     _millisecondsDelayBetweenMoveItems: 80
+    _offsetForPlaySfxAfterItemMovedInSlot: -0.2
     _frinkMoveTime: 0.2
     _frinkMoveEase: 5
     _moveYOffsetInSelected: 1

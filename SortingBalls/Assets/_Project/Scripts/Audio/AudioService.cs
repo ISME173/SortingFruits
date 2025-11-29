@@ -21,6 +21,8 @@ namespace _Project.Scripts.Audio
         private const string SfxVolumeKey = "sfx_volume";
         private const string UiVolumeKey = "ui_volume";
 
+        private readonly Dictionary<AudioCategory, bool> _categoryMuted = new();
+
         public AudioService(
             MonoBehaviour runner,
             ISaves saves,
@@ -44,6 +46,11 @@ namespace _Project.Scripts.Audio
             InitCategory(AudioCategory.Music, MusicVolumeKey, 0.8f);
             InitCategory(AudioCategory.Sfx, SfxVolumeKey, 1f);
             InitCategory(AudioCategory.Ui, UiVolumeKey, 1f);
+
+            // по умолчанию все категории не заглушены
+            _categoryMuted[AudioCategory.Music] = false;
+            _categoryMuted[AudioCategory.Sfx] = false;
+            _categoryMuted[AudioCategory.Ui] = false;
 
             // Music source
             var musicGO = new GameObject("MusicSource");
@@ -126,8 +133,8 @@ namespace _Project.Scripts.Audio
                 return;
             }
 
-            // Жёсткий mute на уровне сервиса, если категория выключена
-            if (_categoryLinearVolumes.TryGetValue(audioEvent.Category, out var vol) && vol <= 0.0001f)
+            // Гейтим проигрывание по mute/нулевому уровню
+            if (IsMutedOrZero(audioEvent.Category))
                 return;
 
             var pooled = GetFree();
@@ -148,7 +155,8 @@ namespace _Project.Scripts.Audio
             if (audioEvent == null || audioEvent.Clip == null)
                 return;
 
-            if (_categoryLinearVolumes.TryGetValue(audioEvent.Category, out var vol) && vol <= 0.0001f)
+            // FIX: учитывать mute-флаг
+            if (IsMutedOrZero(audioEvent.Category))
                 return;
 
             var pooled = GetFree();
@@ -169,7 +177,8 @@ namespace _Project.Scripts.Audio
             if (audioEvent == null || audioEvent.Clip == null)
                 return;
 
-            if (_categoryLinearVolumes.TryGetValue(audioEvent.Category, out var vol) && vol <= 0.0001f)
+            // FIX: учитывать mute-флаг
+            if (IsMutedOrZero(audioEvent.Category))
                 return;
 
             var pooled = GetFree();
@@ -182,6 +191,12 @@ namespace _Project.Scripts.Audio
 
             pooled.Source.PlayOneShot(audioEvent.Clip, audioEvent.Volume);
             _root.gameObject.AddComponent<AutoRelease>().Init(pooled, true);
+        }
+
+        private bool IsMutedOrZero(AudioCategory category)
+        {
+            return (_categoryMuted.TryGetValue(category, out var muted) && muted) ||
+                   (_categoryLinearVolumes.TryGetValue(category, out var vol) && vol <= 0.0001f);
         }
 
         public void Stop(AudioEvent audioEvent)
@@ -248,14 +263,29 @@ namespace _Project.Scripts.Audio
 
         public float GetCategoryVolume(AudioCategory category) => _categoryLinearVolumes[category];
 
+        public void SetCategoryMuted(AudioCategory category, bool muted)
+        {
+            _categoryMuted[category] = muted;
+            ApplyMixerVolume(category);
+        }
+
+        public bool GetCategoryMuted(AudioCategory category)
+        {
+            return _categoryMuted.TryGetValue(category, out var muted) && muted;
+        }
+
+        // применять к микшеру эффективную громкость (с учётом mute)
         private void ApplyMixerVolume(AudioCategory category)
         {
             if (_mixer == null) return;
             if (!_categoryVolumeParams.TryGetValue(category, out var paramName))
                 return;
 
-            float linear = _categoryLinearVolumes[category];
-            float dB = LinearToDecibels(linear);
+            bool muted = _categoryMuted.TryGetValue(category, out var m) && m;
+            float baseLinear = _categoryLinearVolumes[category];
+            float effectiveLinear = muted ? 0f : baseLinear;
+
+            float dB = LinearToDecibels(effectiveLinear);
             bool ok = _mixer.SetFloat(paramName, dB);
             if (!ok)
                 Debug.LogWarning($"[AudioService] Не удалось установить параметр микшера '{paramName}' (категория {category}). Проверьте, что параметр Exposed и имя совпадает.");

@@ -234,6 +234,8 @@ MonoBehaviour:
     _slotTransform: {fileID: 1485820497944455201}
   _onFilledVisualEffect: {fileID: 3825527876937905230}
   _onFilledSoundEffect: {fileID: 11400000, guid: 37f200c504bf29443839b0b645bbc0cc, type: 2}
+  _onClickToFlaskSoundEffect: {fileID: 11400000, guid: fe2900803c504df489f7fa74abf769fc, type: 2}
+  _onMovedItemInFlaskEffect: {fileID: 11400000, guid: 812b80c4bff02c94bad73e9fb518cbee, type: 2}
 --- !u!1 &7559928717425645452
 GameObject:
   m_ObjectHideFlags: 0
