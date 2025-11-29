@@ -1,11 +1,4 @@
-using _Project.Scripts.FruitsSequence.Input;
-using _Project.Scripts.Utils;
-using AnimationsUI.CoreScripts;
-using LitMotion;
 using Reflex.Attributes;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
 
 namespace _Project.Scripts.FlaskSequence.Bonuses
 {
@@ -21,6 +14,11 @@ namespace _Project.Scripts.FlaskSequence.Bonuses
         protected override bool CanUseBonus()
         {
             return base.CanUseBonus() && LevelCreator.CanCreateFlask();
+        }
+
+        protected override string BuildSaveBonusesCountKey()
+        {
+            return $"Save_bonuses_count_to_bonus_'{typeof(AddFlaskBonus)}'";
         }
     }
 }

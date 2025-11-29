@@ -21,5 +21,10 @@ namespace _Project.Scripts.FlaskSequence.Bonuses
         {
             _flaskItemsMover = flaskItemsMover;
         }
+
+        protected override string BuildSaveBonusesCountKey()
+        {
+            return $"Save_bonuses_count_to_bonus_'{typeof(CancelLastMoveBonus)}'";
+        }
     }
 }

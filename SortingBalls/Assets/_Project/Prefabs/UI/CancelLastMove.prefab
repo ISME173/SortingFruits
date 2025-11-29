@@ -142,6 +142,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _buttonForUse: {fileID: 2131126657700694578}
   _bonusesCountText: {fileID: 6027407881590191742}
+  _advImage: {fileID: 4360398873559328439}
   _startBonusesCount: 1
   _bonusAnimation: {fileID: 5351579981130826321}
   _timerWithoutTriggerDownForAnimate: 5
@@ -173,6 +174,17 @@ MonoBehaviour:
     _loopCount: -1
     _loopType: 3
   _hidedLocalScale: {x: 0.9, y: 0.9, z: 1}
+--- !u!114 &4360398873559328439 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7183958281626347448, guid: 0db9806c6b227fd449fe8b9953dac2d9, type: 3}
+  m_PrefabInstance: {fileID: 6859461975501701391}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &6027407881590191742 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 906371253148235633, guid: 0db9806c6b227fd449fe8b9953dac2d9, type: 3}

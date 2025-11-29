@@ -1,4 +1,6 @@
+using _Project.Scripts.Advertising;
 using _Project.Scripts.FlaskSequence;
+using _Project.Scripts.GameEvents;
 using System;
 
 namespace _Project.Scripts.Victory
@@ -8,6 +10,8 @@ namespace _Project.Scripts.Victory
         private readonly VictoryView VictoryView;
 
         private LevelCreator _levelCreator;
+        private IGameEvents _gameEvents;
+        private IAdvertising _advertising;
 
         public VictoryController(VictoryView victoryView)
         {
@@ -21,21 +25,27 @@ namespace _Project.Scripts.Victory
             _levelCreator.LevelCompleted -= OnLevelCompleted;
         }
 
-        public void Initialize(LevelCreator levelCreator)
+        public void Initialize(LevelCreator levelCreator, IAdvertising advertising, IGameEvents gameEvents)
         {
             _levelCreator = levelCreator;
+            _gameEvents = gameEvents;
+            _advertising = advertising;
+
             _levelCreator.LevelCompleted += OnLevelCompleted;
         }
 
         private void OnContinueButtonClicked()
         {
-            VictoryView.Hide();
+            if (_advertising.CanShowInterstitial())
+                _advertising.ShowInterstitial(null, null);
+
+            VictoryView.Hide(_gameEvents.GameStart);
             _levelCreator.LoadNextLevel();
         }
 
         private void OnLevelCompleted(LevelData levelData)
         {
-            VictoryView.Show(_levelCreator.CurrentLevelIndex + 1);
+            VictoryView.Show(_levelCreator.CurrentLevelIndex + 1, _gameEvents.GameStop);
         }
     }
 }

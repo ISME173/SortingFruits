@@ -328,22 +328,66 @@ namespace _Project.Scripts.FlaskSequence
 
             int totalBeforeAdd = SpawnedFlasks.Count;
 
-            // Определяем ряд назначения для новой колбы (чередуем по парам: 2 в ряд 0, 2 в ряд 1, ...)
-            int pairIndex = totalBeforeAdd / 2;
-            int targetRow = pairIndex % 2; // 0 или 1
-
-            // Считаем, сколько колб уже находится в каждом ряду по текущему правилу распределения
-            int row0Count = 0;
-            int row1Count = 0;
-            for (int i = 0; i < totalBeforeAdd; i++)
+            // Собираем существующие ряды по Y (с допуском по высоте)
+            const float yTolerance = 0.001f;
+            // rowIndex -> индексы колб в SpawnedFlasks
+            Dictionary<int, List<int>> rows = new Dictionary<int, List<int>>();
+            for (int i = 0; i < SpawnedFlasks.Count; i++)
             {
-                int pi = i / 2;
-                int r = pi % 2;
-                if (r == 0) row0Count++; else row1Count++;
+                Flask f = SpawnedFlasks[i];
+                if (f == null) continue;
+                float y = f.transform.position.y;
+
+                // Вычисляем ближайший rowIndex по сетке spacingY
+                int rowIndex = Mathf.RoundToInt((y - basePos.y) / spacingY);
+                float expectedY = basePos.y + rowIndex * spacingY;
+                if (Mathf.Abs(y - expectedY) > yTolerance)
+                {
+                    // Если колба "между" — приведём к ближайшему ряду
+                    rowIndex = Mathf.RoundToInt((y - basePos.y) / spacingY);
+                }
+
+                if (!rows.TryGetValue(rowIndex, out var list))
+                {
+                    list = new List<int>();
+                    rows[rowIndex] = list;
+                }
+                list.Add(i);
             }
 
-            // Текущие данные о рядах
-            int currentRowCountBeforeAdd = (targetRow == 0) ? row0Count : row1Count;
+            // Убедимся, что два базовых ряда существуют в словаре (даже если пустые)
+            if (!rows.ContainsKey(0)) rows[0] = new List<int>();
+            if (!rows.ContainsKey(1)) rows[1] = new List<int>();
+
+            int row0Count = rows[0].Count;
+            int row1Count = rows[1].Count;
+
+            // Определяем желаемый ряд по чередованию попарно: 2 в 0, 2 в 1, ...
+            int pairIndex = totalBeforeAdd / 2;
+            int desiredRow = pairIndex % 2; // 0 или 1
+
+            // Корректируем целевой ряд, чтобы не нарушать максимум
+            int targetRow = desiredRow;
+            bool desiredRowFull = (desiredRow == 0 ? row0Count : row1Count) >= _flasksCountInRow;
+            if (desiredRowFull)
+            {
+                int otherRow = desiredRow == 0 ? 1 : 0;
+                bool otherRowHasSpace = (otherRow == 0 ? row0Count : row1Count) < _flasksCountInRow;
+                if (otherRowHasSpace)
+                {
+                    targetRow = otherRow;
+                }
+                else
+                {
+                    // Оба базовых ряда заполнены — создаём новый ряд выше
+                    targetRow = rows.Keys.Count == 0 ? 0 : (rows.Keys.Max() + 1);
+                    if (!rows.ContainsKey(targetRow))
+                        rows[targetRow] = new List<int>();
+                }
+            }
+
+            // Количество в целевом ряду до/после добавления
+            int currentRowCountBeforeAdd = rows[targetRow].Count;
             int currentRowCountAfterAdd = currentRowCountBeforeAdd + 1;
 
             // Центрирование: стартовая X-точка для выбранного ряда после добавления
@@ -352,19 +396,14 @@ namespace _Project.Scripts.FlaskSequence
 
             // 1) Перепозиционируем уже созданные колбы выбранного ряда для центрирования
             int indexInRow = 0;
-            for (int i = 0; i < SpawnedFlasks.Count; i++)
+            foreach (int spawnedIndex in rows[targetRow])
             {
-                int pi = i / 2;
-                int r = pi % 2;
-                if (r != targetRow)
-                    continue;
+                Flask existing = SpawnedFlasks[spawnedIndex];
+                if (existing == null) continue;
 
                 float x = startXAfterAdd + indexInRow * spacingX;
                 Vector3 targetPos = new Vector3(x, rowY, basePos.z);
-
-                Flask existing = SpawnedFlasks[i];
-                if (existing != null)
-                    existing.transform.position = targetPos;
+                existing.transform.position = targetPos;
 
                 indexInRow++;
             }
@@ -377,7 +416,7 @@ namespace _Project.Scripts.FlaskSequence
             SpawnedFlasks.Add(newFlask);
             newFlask.OnFilled += OnFilledFlask;
 
-            // Обновим служебный счётчик ряда, если нужно (теперь максимум 2 ряда: 0 и 1)
+            // Обновим служебный счётчик количества задействованных рядов
             _currentSpawnFlasksRow = Math.Max(_currentSpawnFlasksRow, targetRow + 1);
 
             // Пустая колба — без добавления предметов
@@ -594,7 +633,7 @@ namespace _Project.Scripts.FlaskSequence
             _saves = saves;
             _flaskItemsMover = flaskItemsMover;
 
-            // Rebuild ordered keys now that _saves is available (если Awake ещё не вызван или для случаев тестирования)
+            // Rebuild ordered keys now that _saves is available (если Awake ещё не вызвано или для случаев тестирования)
             if (_orderedGeneratedKeys == null)
                 BuildOrderedGeneratedKeys();
         }

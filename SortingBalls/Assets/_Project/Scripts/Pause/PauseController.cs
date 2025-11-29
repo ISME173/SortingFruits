@@ -1,3 +1,5 @@
+using _Project.Scripts.Advertising;
+using _Project.Scripts.GameEvents;
 using System;
 
 namespace _Project.Scripts.Pause
@@ -6,6 +8,9 @@ namespace _Project.Scripts.Pause
     {
         private readonly PauseView PauseView;
 
+        private IAdvertising _advertising;
+        private IGameEvents _gameEvents;
+
         public PauseController(PauseView pauseView)
         {
             PauseView = pauseView;
@@ -13,6 +18,12 @@ namespace _Project.Scripts.Pause
             PauseView.OnClosePauseViewClicked += OnCloseButtonClicked;
             PauseView.OnOpenPauseViewClicked += OnOpenButtonClicked;
             PauseView.OnOpenLevelsViewClicked += OnOpenLevelsViewButtonClicked;
+        }
+
+        public void Initialize(IAdvertising advertising, IGameEvents gameEvents)
+        {
+            _advertising = advertising;
+            _gameEvents = gameEvents;
         }
 
         public void Dispose()
@@ -24,16 +35,22 @@ namespace _Project.Scripts.Pause
 
         private void OnCloseButtonClicked()
         {
-            PauseView.Hide();
+            if (_advertising.CanShowInterstitial())
+                _advertising.ShowInterstitial(null, null);
+
+            PauseView.Hide(_gameEvents.GameStart);
         }
 
         private void OnOpenButtonClicked()
         {
-            PauseView.Show();
+            PauseView.Show(_gameEvents.GameStop);
         }
 
         private void OnOpenLevelsViewButtonClicked()
         {
+            if (_advertising.CanShowInterstitial())
+                _advertising.ShowInterstitial(null, null);
+
             PauseView.Hide();
         }
     }

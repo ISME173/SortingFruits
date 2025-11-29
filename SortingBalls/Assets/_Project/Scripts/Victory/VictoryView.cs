@@ -1,4 +1,6 @@
+using _Project.Scripts.Advertising;
 using _Project.Scripts.FlaskSequence;
+using _Project.Scripts.GameEvents;
 using AnimationsUI.CoreScripts;
 using Reflex.Attributes;
 using System;
@@ -16,23 +18,29 @@ namespace _Project.Scripts.Victory
 
         public event Action OnContinueButtonClick;
 
-        public void Show(int levelNumber)
+        public void Show(int levelNumber, Action callback = null)
         {
             _levelNumberText.text = levelNumber.ToString();
 
             gameObject.SetActive(true);
-            _viewAnimation.Show(null);
+            _viewAnimation.Show(callback);
         }
 
-        public void Hide()
+        public void Hide(Action callback = null)
         {
-            _viewAnimation.Hide(() => gameObject.SetActive(false));
+            _viewAnimation.Hide(() =>
+            {
+                if (callback != null)
+                    callback();
+
+                gameObject.SetActive(false);
+            });
         }
 
         [Inject]
-        private void Initialize(VictoryController controller, LevelCreator levelCreator)
+        private void Initialize(VictoryController controller, LevelCreator levelCreator, IAdvertising advertising, IGameEvents gameEvents)
         {
-            controller.Initialize(levelCreator);
+            controller.Initialize(levelCreator, advertising, gameEvents);
 
             _buttonContinue.onClick.AddListener(() => OnContinueButtonClick?.Invoke());
         }

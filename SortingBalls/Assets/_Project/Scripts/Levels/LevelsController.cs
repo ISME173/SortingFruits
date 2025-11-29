@@ -1,4 +1,6 @@
+using _Project.Scripts.Advertising;
 using _Project.Scripts.FlaskSequence;
+using _Project.Scripts.GameEvents;
 using System;
 
 namespace _Project.Scripts.Levels
@@ -8,6 +10,8 @@ namespace _Project.Scripts.Levels
         private readonly LevelsView LevelsView;
 
         private LevelCreator _levelCreator;
+        private IAdvertising _advertising;
+        private IGameEvents _gameEvents;
 
         public LevelsController(LevelsView levelsView)
         {
@@ -18,9 +22,11 @@ namespace _Project.Scripts.Levels
             LevelsView.OnLevelButtonClicked += OnLevelButtonDown;
         }
 
-        public void Initialize(LevelCreator levelCreator)
+        public void Initialize(LevelCreator levelCreator, IAdvertising advertising, IGameEvents gameEvents)
         {
             _levelCreator = levelCreator;
+            _advertising = advertising;
+            _gameEvents = gameEvents;
 
             _levelCreator.LevelCompleted += OnLevelCompleted;
             _levelCreator.LevelLoaded += OnLevelLoaded;
@@ -48,11 +54,19 @@ namespace _Project.Scripts.Levels
 
         private void OnCloseLevelsViewButtonClicked()
         {
+            if (_advertising.CanShowInterstitial())
+                _advertising.ShowInterstitial(null, null);
+
             LevelsView.Hide();
         }
 
         private void OnLevelButtonDown(int levelNumber)
         {
+            if (_advertising.CanShowInterstitial())
+                _advertising.ShowInterstitial(null, null);
+
+            _gameEvents.GameStart();
+
             if (levelNumber - 1 == _levelCreator.CurrentLevelIndex)
             {
                 _levelCreator.ReloadCurrentLevel();

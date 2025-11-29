@@ -1,3 +1,5 @@
+using _Project.Scripts.Advertising;
+using _Project.Scripts.GameEvents;
 using AnimationsUI.CoreScripts;
 using Reflex.Attributes;
 using System;
@@ -23,20 +25,28 @@ namespace _Project.Scripts.Pause
         public event Action OnOpenPauseViewClicked, OnClosePauseViewClicked;
         public event Action OnOpenLevelsViewClicked;
 
-        public void Show()
+        public void Show(Action callback = null)
         {
             gameObject.SetActive(true);
-            _pauseViewAnimations.Show(null);
+            _pauseViewAnimations.Show(callback);
         }
 
-        public void Hide()
+        public void Hide(Action callback = null)
         {
-            _pauseViewAnimations.Hide(() => gameObject.SetActive(false));
+            _pauseViewAnimations.Hide(() =>
+            {
+                if (callback != null)
+                    callback();
+
+                gameObject.SetActive(false);
+            });
         }
 
         [Inject]
-        private void Initialize(PauseController pauseController)
+        private void Initialize(PauseController pauseController, IAdvertising advertising, IGameEvents gameEvents)
         {
+            pauseController.Initialize(advertising, gameEvents);
+
             _closePauseViewButton.onClick.AddListener(() => OnClosePauseViewClicked?.Invoke());
             _openPauseViewButton.onClick.AddListener(() => OnOpenPauseViewClicked?.Invoke());
 

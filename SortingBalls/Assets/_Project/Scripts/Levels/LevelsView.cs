@@ -1,4 +1,6 @@
+using _Project.Scripts.Advertising;
 using _Project.Scripts.FlaskSequence;
+using _Project.Scripts.GameEvents;
 using AnimationsUI.CoreScripts;
 using Reflex.Attributes;
 using System;
@@ -143,9 +145,9 @@ namespace _Project.Scripts.Levels
         }
 
         [Inject]
-        private void Initialize(LevelsController levelsController, LevelCreator levelCreator)
+        private void Initialize(LevelsController levelsController, LevelCreator levelCreator, IAdvertising advertising, IGameEvents gameEvents)
         {
-            levelsController.Initialize(levelCreator);
+            levelsController.Initialize(levelCreator, advertising, gameEvents);
 
             _grid ??= _parentForLevelButtons.GetComponent<GridLayoutGroup>();
 
