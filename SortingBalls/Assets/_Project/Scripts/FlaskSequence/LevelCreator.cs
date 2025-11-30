@@ -664,6 +664,9 @@ namespace _Project.Scripts.FlaskSequence
 
         private void SaveLevelKey(int levelIndex)
         {
+            if (_saves == null)
+                return;
+
             // Здесь levelIndex трактуется как индекс в AllLevels/_loadedLevelKeys
             if (levelIndex < 0 || levelIndex >= _loadedLevelKeys.Count)
                 return;

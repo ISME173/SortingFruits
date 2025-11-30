@@ -52,6 +52,12 @@ namespace _Project.Scripts.FlaskSequence.Education
 
         private void OnMove(FlaskItemsMover.Move move)
         {
+            if (_levelCreator.CurrentLevelIndex != 0)
+            {
+                Dispose();
+                return;
+            }
+
             FlaskItemsMover.Move currentMove = MovesToCompleteLevel[_currentMoveIndex];
             if (move.StartFlask == currentMove.StartFlask && move.EndFlask == currentMove.EndFlask)
             {
