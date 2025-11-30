@@ -418,6 +418,7 @@ GameObject:
   - component: {fileID: 143332927}
   - component: {fileID: 143332928}
   - component: {fileID: 143332929}
+  - component: {fileID: 143332930}
   m_Layer: 0
   m_Name: Flasks
   m_TagString: Untagged
@@ -480,6 +481,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e211a3a81d502c44dbfdeac8743500c5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &143332930
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 143332926}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9366a9bfa5fecfc4b820d51d0b316c2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _pointerMoveToFlaskTime: 1
+  _pointerMoveEase: 5
+  _loopsCount: -1
+  _loopType: 0
+  _pointerPrefab: {fileID: 7046140623450411648, guid: d41920e07787d064db1e1788afffc442, type: 3}
+  _canMovePrefab: {fileID: 0}
+  _cantMovePrefab: {fileID: 0}
 --- !u!1 &154433812
 GameObject:
   m_ObjectHideFlags: 0
@@ -5008,6 +5028,7 @@ Transform:
   - {fileID: 1101429349}
   - {fileID: 15416321}
   - {fileID: 1910367877}
+  - {fileID: 2033676128}
   m_Father: {fileID: 1910583670}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1632095195
@@ -5466,6 +5487,51 @@ Transform:
   - {fileID: 1632095194}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2033676127
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2033676128}
+  - component: {fileID: 2033676129}
+  m_Layer: 0
+  m_Name: EducationBindingModule
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2033676128
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2033676127}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1632095194}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2033676129
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2033676127}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb551b9b74bc302419d6c9fd5baf70a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _educationView: {fileID: 143332930}
 --- !u!1 &2039118702
 GameObject:
   m_ObjectHideFlags: 0

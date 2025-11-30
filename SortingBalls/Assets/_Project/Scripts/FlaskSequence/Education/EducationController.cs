@@ -55,13 +55,16 @@ namespace _Project.Scripts.FlaskSequence.Education
             FlaskItemsMover.Move currentMove = MovesToCompleteLevel[_currentMoveIndex];
             if (move.StartFlask == currentMove.StartFlask && move.EndFlask == currentMove.EndFlask)
             {
-                EducationView.MovePointer(currentMove.StartFlask.transform, currentMove.EndFlask.transform);
                 _currentMoveIndex++;
 
                 if (_currentMoveIndex == MovesToCompleteLevel.Count)
                 {
                     Dispose();
+                    return;
                 }
+
+                FlaskItemsMover.Move nextMove = MovesToCompleteLevel[_currentMoveIndex];
+                EducationView.MovePointer(nextMove.StartFlask.Center, nextMove.EndFlask.Center);
             }
         }
 
@@ -100,7 +103,7 @@ namespace _Project.Scripts.FlaskSequence.Education
             MovesToCompleteLevel.AddRange(movesForCompeleteLevel);
 
             FlaskItemsMover.Move currentMove = MovesToCompleteLevel[0];
-            EducationView.MovePointer(currentMove.StartFlask.transform, currentMove.EndFlask.transform);
+            EducationView.MovePointer(currentMove.StartFlask.Center, currentMove.EndFlask.Center);
         }
 
         // Поиск колб текущего уровня в сцене и упорядочивание как в LevelCreator (по siblingIndex)

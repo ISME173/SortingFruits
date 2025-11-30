@@ -37,24 +37,22 @@ namespace _Project.Scripts.FlaskSequence.Education
             CantMoveViews.Clear();
 
             _movePointerHandle.TryCancel();
-            Destroy(_currentPointer.gameObject);
 
-            Destroy(gameObject);
+            if (_currentPointer != null)
+                Destroy(_currentPointer.gameObject);
         }
 
         public void MovePointer(Transform start, Transform end)
         {
             _movePointerHandle.TryCancel();
 
-            GameObject pointer = Instantiate(_pointerPrefab);
-            pointer.transform.position = start.position;
-
-            _currentPointer = pointer;
+            _currentPointer ??= Instantiate(_pointerPrefab);
+            _currentPointer.transform.position = start.position;
 
             _movePointerHandle = LMotion.Create(start.position, end.position, _pointerMoveToFlaskTime)
                 .WithEase(_pointerMoveEase)
                 .WithLoops(_loopsCount, _loopType)
-                .BindToPosition(pointer.transform);
+                .BindToPosition(_currentPointer.transform);
         }
 
         public void SetCanMovePoints(List<Transform> canMovePoints)

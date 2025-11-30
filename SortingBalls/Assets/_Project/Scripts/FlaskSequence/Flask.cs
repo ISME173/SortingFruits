@@ -10,6 +10,7 @@ namespace _Project.Scripts.FlaskSequence
     public class Flask : MonoBehaviour
     {
         [SerializeField] private Transform _slotForSelectItems;
+        [SerializeField] private Transform _center;
         [SerializeField] private List<ItemSlot> _itemSlots = new List<ItemSlot>();
 
         [Header("VFX")]
@@ -26,6 +27,7 @@ namespace _Project.Scripts.FlaskSequence
 
         public bool IsFilled { get; private set; } = false;
         public Transform SlotForSelectItems => _slotForSelectItems;
+        public Transform Center => _center;
         public int FreeSlotsCount => _itemSlots.Where(slot => slot.Item == null).Count();
         public bool IsEmpty => _itemSlots.All(slot => slot.Item == null);
 
