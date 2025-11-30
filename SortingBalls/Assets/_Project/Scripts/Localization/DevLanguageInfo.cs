@@ -18,6 +18,8 @@ namespace _Project.Scripts.Localization
                     return ILanguageInfo.LanguageType.French;
                 case SystemLanguage.Turkish:
                     return ILanguageInfo.LanguageType.Turkish;
+                case SystemLanguage.German:
+                    return ILanguageInfo.LanguageType.German;
                 default:
                     return ILanguageInfo.LanguageType.English;
             }

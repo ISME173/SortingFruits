@@ -4,7 +4,7 @@ namespace _Project.Scripts.Localization
     {
         public enum LanguageType
         {
-            Russian, English, Spanish, Turkish, French
+            Russian, English, Spanish, Turkish, French, German
         }
 
         public LanguageType GetCurrentLanguage();
