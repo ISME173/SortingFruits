@@ -46,6 +46,7 @@ namespace _Project.Scripts.FlaskSequence
         private List<string> _orderedGeneratedKeys = null;
 
         public event Action<LevelData> LevelCreated, LevelCompleted, LevelLoaded;
+        public event Action<int, LevelState> OnLevelStateChanged;
 
         public int CurrentLevelIndex => _currentLevelIndex;
         public int LevelsCount => _generationSettings.GeneratedLevelKeys.Count;
@@ -76,13 +77,19 @@ namespace _Project.Scripts.FlaskSequence
         {
             if (_saveInOnDestroy)
             {
-                for (int i = 0; i < AllLevels.Count; i++)
-                {
-                    _saves.SetObject(_orderedGeneratedKeys[i], AllLevels[i], true);
-                }
-
-                _saves.Save();
+                SaveLevels();
+                SaveCurrentLevelKey();
             }
+        }
+
+        private void SaveLevels()
+        {
+            for (int i = 0; i < AllLevels.Count; i++)
+            {
+                _saves.SetObject(_orderedGeneratedKeys[i], AllLevels[i], true);
+            }
+
+            _saves.Save();
         }
 
         #region Загрузка уровней
@@ -130,32 +137,8 @@ namespace _Project.Scripts.FlaskSequence
                 Debug.LogWarning("[LevelCreator] Нет настроек или списка ключей уровней.");
                 return;
             }
-
-            // Берём сохранённый ключ, если доступен, и переносим его в начало, чтобы порядок списков и загрузка совпадали.
+               
             string firstKey = _orderedGeneratedKeys[0];
-            if (!_forceReloadGeneration && _saves != null)
-            {
-                try
-                {
-                    if (_saves.HasKey(SaveKey_CurrentLevel))
-                    {
-                        string savedKey = _saves.GetString(SaveKey_CurrentLevel);
-                        if (!string.IsNullOrEmpty(savedKey) && _orderedGeneratedKeys.Contains(savedKey))
-                        {
-                            if (!string.Equals(firstKey, savedKey, StringComparison.Ordinal))
-                            {
-                                _orderedGeneratedKeys.Remove(savedKey);
-                                _orderedGeneratedKeys.Insert(0, savedKey);
-                                firstKey = savedKey;
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogWarning($"[LevelCreator] Ошибка при выборе сохранённого первого уровня: {ex.Message}");
-                }
-            }
 
             LevelData level = await LoadLevelByKey(firstKey);
             if (level != null)
@@ -163,13 +146,12 @@ namespace _Project.Scripts.FlaskSequence
                 AllLevels.Add(level);
                 _loadedLevelKeys.Add(firstKey);
 
-                // ВАЖНО: _currentLevelIndex — индекс в списке AllLevels, а не LevelData.LevelIndex
-                _currentLevelIndex = 0;
+                _currentLevelIndex = level.LevelIndex;
 
                 CreateLevelView(level);
-
-                // Сохраняем текущий уровень в ISaves
                 SaveCurrentLevelKey();
+
+                SetLevelStateByIndex(_currentLevelIndex, LevelState.Opened);
             }
             else
             {
@@ -191,6 +173,8 @@ namespace _Project.Scripts.FlaskSequence
                 {
                     AllLevels.Add(level);
                     _loadedLevelKeys.Add(key);
+
+                    SetLevelStateByIndex(level.LevelIndex, level.LevelState);
 
                     LevelLoaded?.Invoke(level);
                 }
@@ -275,7 +259,7 @@ namespace _Project.Scripts.FlaskSequence
 
         #region Управление уровнями
 
-        public void SetLevelStateByIndex(int levelIndex, LevelState levelState)
+        private void SetLevelStateByIndex(int levelIndex, LevelState levelState)
         {
             if (levelIndex < 0 || levelIndex > AllLevels.Count - 1)
             {
@@ -284,6 +268,7 @@ namespace _Project.Scripts.FlaskSequence
             }
 
             AllLevels[levelIndex].LevelState = levelState;
+            OnLevelStateChanged?.Invoke(levelIndex, levelState);
         }
 
         [ContextMenu("LevelsControll/LoadNextLevel")]
@@ -587,24 +572,24 @@ namespace _Project.Scripts.FlaskSequence
                 }
                 else
                 {
-                    SetLevelStateByIndex(_currentLevelIndex, LevelState.Completed);
-
-                    // Сохраняем ключ следующего уровня как "текущий", чтобы при новом запуске начать со следующего
-                    SaveLevelKey(_currentLevelIndex + 1);
-
-                    LevelCompleted?.Invoke(AllLevels[_currentLevelIndex]);
+                    OnLevelCompleted();
                 }
 
                 void OnAnyItemMovingEnd()
                 {
                     _flaskItemsMover.OnAnyItemMovingEnd -= OnAnyItemMovingEnd;
 
+                    OnLevelCompleted();
+                }
+
+                void OnLevelCompleted()
+                {
                     SetLevelStateByIndex(_currentLevelIndex, LevelState.Completed);
 
-                    // Сохраняем ключ следующего уровня как "текущий", чтобы при новом запуске начать со следующего
-                    SaveLevelKey(_currentLevelIndex + 1);
-
                     LevelCompleted?.Invoke(AllLevels[_currentLevelIndex]);
+
+                    SaveLevelKey(_currentLevelIndex + 1);
+                    SaveLevels();
                 }
             }
         }
@@ -692,10 +677,6 @@ namespace _Project.Scripts.FlaskSequence
             _saves = saves;
             _flaskItemsMover = flaskItemsMover;
             _audioService = audioService;
-
-            // Rebuild ordered keys now that _saves is available (если Awake ещё не вызвано или для случаев тестирования)
-            if (_orderedGeneratedKeys == null)
-                BuildOrderedGeneratedKeys();
         }
     }
 

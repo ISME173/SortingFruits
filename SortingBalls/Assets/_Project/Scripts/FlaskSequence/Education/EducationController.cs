@@ -28,7 +28,7 @@ namespace _Project.Scripts.FlaskSequence.Education
 
             if (_flaskItemsMover != null)
             {
-                _flaskItemsMover.OnMove += OnMove;
+                _flaskItemsMover.OnMove -= OnMove;
             }
 
             EducationView.Dispose();

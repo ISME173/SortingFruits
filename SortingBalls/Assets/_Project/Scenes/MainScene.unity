@@ -467,7 +467,7 @@ MonoBehaviour:
   _spawnOffsetBetweenFlasks: 1
   _spawnRowOffsetY: 4
   _flasksCountInRow: 5
-  _saveInOnDestroy: 1
+  _saveInOnDestroy: 0
   _generationSettings: {fileID: 11400000, guid: 83a996eba7057354e9de7c3a8a0b8fda, type: 2}
 --- !u!114 &143332929
 MonoBehaviour:
@@ -5062,12 +5062,14 @@ MonoBehaviour:
   - {fileID: 1010867488}
   - {fileID: 1101429350}
   - {fileID: 1910367878}
+  - {fileID: 2033676129}
   _readOnlyBindingModules:
   - {fileID: 15416322}
   - {fileID: 589517470}
   - {fileID: 1010867488}
   - {fileID: 1101429350}
   - {fileID: 1910367878}
+  - {fileID: 2033676129}
 --- !u!1 &1647657289
 GameObject:
   m_ObjectHideFlags: 0

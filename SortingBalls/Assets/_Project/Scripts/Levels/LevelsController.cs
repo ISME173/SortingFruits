@@ -35,9 +35,7 @@ namespace _Project.Scripts.Levels
             _audioService = audioService;
             _buttonClick = buttonClick;
 
-            _levelCreator.LevelCompleted += OnLevelCompleted;
-            _levelCreator.LevelLoaded += OnLevelLoaded;
-            _levelCreator.LevelCreated += OnLevelCreated;
+            _levelCreator.OnLevelStateChanged += OnLevelStateChanged;
 
             LevelsView.UpdateView(_levelCreator.LevelsCount, 1, 0);
         }
@@ -47,11 +45,9 @@ namespace _Project.Scripts.Levels
             LevelsView.OnCloseLevelsViewButtonClicked -= OnCloseLevelsViewButtonClicked;
             LevelsView.OnOpenLevelsViewButtonClicked -= OnOpenLevelsViewButtonClicked;
             LevelsView.OnLevelButtonClicked -= OnLevelButtonDown;
-
-            _levelCreator.LevelCompleted -= OnLevelCompleted;
-            _levelCreator.LevelLoaded -= OnLevelLoaded;
-            _levelCreator.LevelCreated -= OnLevelCreated;
             LevelsView.OnRestartLevelButtonClicked -= OnRestartLevelButtonClicked;
+
+            _levelCreator.OnLevelStateChanged -= OnLevelStateChanged;
         }
 
         private void OnOpenLevelsViewButtonClicked()
@@ -63,6 +59,22 @@ namespace _Project.Scripts.Levels
 
             LevelsView.UpdateView(_levelCreator.LevelsCount, _levelCreator.LoadedLevelsCount, 0);
             LevelsView.Show();
+        }
+
+        private void OnLevelStateChanged(int levelIndex, LevelState levelState)
+        {
+            switch (levelState)
+            {
+                case LevelState.Opened:
+                    LevelsView.OpenLevel(levelIndex + 1);
+                    break;
+                case LevelState.Locked:
+                    LevelsView.LockLevel(levelIndex + 1);
+                    break;
+                case LevelState.Completed:
+                    LevelsView.CompleteLevel(levelIndex + 1);
+                    break;
+            }
         }
 
         private void OnCloseLevelsViewButtonClicked()
@@ -97,36 +109,6 @@ namespace _Project.Scripts.Levels
         {
             _audioService.PlayOneShot(_buttonClick);
             _levelCreator.ReloadCurrentLevel();
-        }
-
-        private void OnLevelCompleted(LevelData levelData)
-        {
-            LevelsView.CompleteLevel(levelData.LevelIndex + 1);
-        }
-
-        private void OnLevelCreated(LevelData levelData)
-        {
-            if (levelData.LevelState == LevelState.Completed)
-                return;
-
-            LevelsView.OpenLevel(levelData.LevelIndex + 1);
-        }
-
-        private void OnLevelLoaded(LevelData levelData)
-        {
-            LevelState levelState = levelData.LevelState;
-            switch (levelState)
-            {
-                case LevelState.Opened:
-                    LevelsView.OpenLevel(levelData.LevelIndex + 1);
-                    break;
-                case LevelState.Locked:
-                    LevelsView.LockLevel(levelData.LevelIndex + 1);
-                    break;
-                case LevelState.Completed:
-                    LevelsView.CompleteLevel(levelData.LevelIndex + 1);
-                    break;
-            }
         }
     }
 }
