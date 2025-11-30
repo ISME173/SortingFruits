@@ -1046,7 +1046,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 0.32941177}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.60784316}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -4780,7 +4780,7 @@ MonoBehaviour:
   m_text: "\u041A\u0410\u0420\u0422\u0410"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: e80d52e7a7ccefd44bf671e7c97bd205, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: -8331472058895141867, guid: e80d52e7a7ccefd44bf671e7c97bd205, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -4804,7 +4804,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 89.5
+  m_fontSize: 94.44
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1

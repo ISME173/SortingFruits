@@ -106,6 +106,9 @@ namespace _Project.Scripts.Levels
 
         private void OnLevelCreated(LevelData levelData)
         {
+            if (levelData.LevelState == LevelState.Completed)
+                return;
+
             LevelsView.OpenLevel(levelData.LevelIndex + 1);
         }
 
