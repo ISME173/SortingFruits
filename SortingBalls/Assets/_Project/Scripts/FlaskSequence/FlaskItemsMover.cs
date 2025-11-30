@@ -29,6 +29,7 @@ namespace _Project.Scripts.FlaskSequence
         private MotionHandle _moveDownFrinkHandle;
 
         public event Action OnAnyItemMovingEnd, OnAnyItemMovingStart;
+        public event Action<Move> OnMove;
 
         public bool IsMovingAnyItem => MovingItemHandlers.Count > 0;
 
@@ -192,13 +193,16 @@ namespace _Project.Scripts.FlaskSequence
                         {
                             UsingFilling.Remove(endFlask);
 
-                            MovesInLevel.Push(new Move(startFlask, endFlask));
+                            Move move = new Move(startFlask, endFlask);
+                            MovesInLevel.Push(move);
 
                             if (endFlask.IsFilled)
                             {
                                 endFlask.PlaySfxOnFilledEffect();
                                 endFlask.PlayVfxOnFilledEffect();
                             }
+
+                            OnMove?.Invoke(move);
                         });
                     }
                     else
@@ -389,7 +393,7 @@ namespace _Project.Scripts.FlaskSequence
             public int MillisecondsDelayBetweenMoveItems => _millisecondsDelayBetweenMoveItems;
         }
 
-        private struct Move
+        public struct Move
         {
             public readonly Flask StartFlask;
             public readonly Flask EndFlask;

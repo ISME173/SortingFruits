@@ -12,14 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: efac46ec3ebc626449b58b154178250b, type: 3}
   m_Name: LevelGenerationSettings
   m_EditorClassIdentifier: 
-  MinFruitTypes: 3
+  MinFruitTypes: 2
   MaxFruitTypes: 7
   MinExtraEmptyFlasks: 0
   MaxExtraEmptyFlasks: 1
   FlaskCapacity: 4
-  LevelsPerFruitIncrease: 5
+  LevelsPerFruitIncrease: 4
   LevelsPerExtraEmptyFlaskIncrease: 10
-  MinSolutionMoves: 5
+  MinSolutionMoves: 3
   MaxSolverStates: 250000
   UseSolverValidation: 1
   MaxGenerationAttemptsPerLevel: 100
@@ -56,5 +56,5 @@ MonoBehaviour:
   - Level_19
   - Level_20
   MaxFlasksPerLevel: 10
-  LastGenerationTimestamp: 638999641849275813
-  ForceReloadOnNextPlay: 0
+  LastGenerationTimestamp: 639001281862014391
+  ForceReloadOnNextPlay: 1
