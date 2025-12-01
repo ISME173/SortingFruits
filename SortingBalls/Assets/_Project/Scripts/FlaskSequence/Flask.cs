@@ -22,14 +22,21 @@ namespace _Project.Scripts.FlaskSequence
         [SerializeField] private AudioEvent _onMovedItemInFlaskEffect;
 
         private IAudioService _audioService;
+        private Collider2D _collider2D;
 
         public event Action OnFilled;
 
+        public Collider2D Collider2D => _collider2D ?? GetComponent<Collider2D>();
         public bool IsFilled { get; private set; } = false;
         public Transform SlotForSelectItems => _slotForSelectItems;
         public Transform Center => _center;
         public int FreeSlotsCount => _itemSlots.Where(slot => slot.Item == null).Count();
         public bool IsEmpty => _itemSlots.All(slot => slot.Item == null);
+
+        private void Awake()
+        {
+            _collider2D = GetComponent<Collider2D>();
+        }
 
         public void InjectAudioService(IAudioService audioService)
         {

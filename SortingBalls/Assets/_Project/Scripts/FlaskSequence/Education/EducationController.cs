@@ -19,11 +19,20 @@ namespace _Project.Scripts.FlaskSequence.Education
             EducationView = educationView;
         }
 
+        public bool IsCorrectMove(FlaskItemsMover.Move move)
+        {
+            FlaskItemsMover.Move currentMove = MovesToCompleteLevel[_currentMoveIndex];
+            return (move.StartFlask == currentMove.StartFlask && move.EndFlask == currentMove.EndFlask);
+        }
+
         public void Dispose()
         {
             if (_levelCreator != null)
             {
                 _levelCreator.LevelCreated -= OnLevelCreated;
+
+                foreach (var flask in _levelCreator.SpawnedFlasks)
+                    flask.Collider2D.enabled = true;
             }
 
             if (_flaskItemsMover != null)
@@ -71,6 +80,9 @@ namespace _Project.Scripts.FlaskSequence.Education
 
                 FlaskItemsMover.Move nextMove = MovesToCompleteLevel[_currentMoveIndex];
                 EducationView.MovePointer(nextMove.StartFlask.Center, nextMove.EndFlask.Center);
+
+                foreach (var flask in _levelCreator.SpawnedFlasks)
+                    flask.Collider2D.enabled = flask == nextMove.StartFlask || flask == nextMove.EndFlask;
             }
         }
 
@@ -110,6 +122,9 @@ namespace _Project.Scripts.FlaskSequence.Education
 
             FlaskItemsMover.Move currentMove = MovesToCompleteLevel[0];
             EducationView.MovePointer(currentMove.StartFlask.Center, currentMove.EndFlask.Center);
+
+            foreach (var flask in _levelCreator.SpawnedFlasks)
+                flask.Collider2D.enabled = flask == currentMove.StartFlask || flask == currentMove.EndFlask;
         }
 
         // Поиск колб текущего уровня в сцене и упорядочивание как в LevelCreator (по siblingIndex)

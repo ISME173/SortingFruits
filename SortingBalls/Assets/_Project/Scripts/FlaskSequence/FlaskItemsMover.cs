@@ -1,3 +1,4 @@
+using _Project.Scripts.FlaskSequence.Education;
 using _Project.Scripts.FruitsSequence.Input;
 using LitMotion;
 using LitMotion.Extensions;

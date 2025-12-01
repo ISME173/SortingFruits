@@ -14,8 +14,9 @@ namespace _Project.Scripts.FlaskSequence
 {
     public class LevelCreator : MonoBehaviour
     {
+        public readonly List<Flask> SpawnedFlasks = new List<Flask>();
+
         private readonly List<LevelData> AllLevels = new List<LevelData>();
-        private readonly List<Flask> SpawnedFlasks = new List<Flask>();
         private readonly List<string> _loadedLevelKeys = new List<string>();
 
         private const string SaveKey_CurrentLevel = "FlaskSequence_LastPlayedLevelKey";
@@ -146,7 +147,7 @@ namespace _Project.Scripts.FlaskSequence
                 AllLevels.Add(level);
                 _loadedLevelKeys.Add(firstKey);
 
-                _currentLevelIndex = level.LevelIndex;
+                _currentLevelIndex = level.LevelIndex - 1;
 
                 CreateLevelView(level);
                 SaveCurrentLevelKey();
@@ -174,7 +175,7 @@ namespace _Project.Scripts.FlaskSequence
                     AllLevels.Add(level);
                     _loadedLevelKeys.Add(key);
 
-                    SetLevelStateByIndex(level.LevelIndex, level.LevelState);
+                    SetLevelStateByIndex(level.LevelIndex - 1, level.LevelState);
 
                     LevelLoaded?.Invoke(level);
                 }

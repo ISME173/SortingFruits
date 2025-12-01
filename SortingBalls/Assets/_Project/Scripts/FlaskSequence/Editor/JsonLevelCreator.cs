@@ -7,6 +7,9 @@ using UnityEditor;
 using UnityEngine;
 using Random = UnityEngine.Random;
 using Newtonsoft.Json;
+using System.Diagnostics;
+
+using Debug = UnityEngine.Debug;
 
 namespace _Project.Scripts.FlaskSequence.Editor
 {
@@ -107,7 +110,7 @@ namespace _Project.Scripts.FlaskSequence.Editor
             // Generation params
             EditorGUILayout.BeginVertical(_boxStyle);
             EditorGUILayout.LabelField("Параметры генерации", EditorStyles.boldLabel);
-            _levelsToGenerate = EditorGUILayout.IntSlider("Количество уровней", _levelsToGenerate, 1, 1000);
+            _levelsToGenerate = EditorGUILayout.IntSlider("Количество уровней", _levelsToGenerate, 1, 5000);
             EditorPrefs.SetInt(PrefKey_LevelCount, _levelsToGenerate);
 
             _clearAddressableKeysBeforeGen = EditorGUILayout.ToggleLeft("Очистить список Addressables ключей перед генерацией", _clearAddressableKeysBeforeGen);
@@ -272,8 +275,19 @@ namespace _Project.Scripts.FlaskSequence.Editor
                 _settings.LastGenerationTimestamp = DateTime.UtcNow.Ticks;
                 _settings.ForceReloadOnNextPlay = true;
 
-                for (int levelIndex = 0; levelIndex <= _levelsToGenerate; levelIndex++)
+                bool canceled = false;
+                int total = _levelsToGenerate;
+                for (int levelIndex = 1; levelIndex <= total; levelIndex++)
                 {
+                    if (EditorUtility.DisplayCancelableProgressBar(
+                        "Генерация уровней",
+                        $"Создание уровня {levelIndex}/{total}",
+                        (float)levelIndex / total))
+                    {
+                        canceled = true;
+                        break;
+                    }
+
                     LevelData data = TryGenerateLevel(levelIndex);
                     if (data == null)
                     {
@@ -297,8 +311,9 @@ namespace _Project.Scripts.FlaskSequence.Editor
                         _settings.GeneratedLevelKeys.Add(key);
                 }
 
-                // Удаление лишних JSON файлов
-                if (_deleteExtraFiles && Directory.Exists(_saveFolderAbsolute))
+                EditorUtility.ClearProgressBar();
+
+                if (!canceled && _deleteExtraFiles && Directory.Exists(_saveFolderAbsolute))
                 {
                     var expectedFiles = new HashSet<string>(
                         generatedKeysLocal.Select(k => k + ".json"),
@@ -323,11 +338,14 @@ namespace _Project.Scripts.FlaskSequence.Editor
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh();
 
-                _lastStatus = $"Сгенерировано {generated} уровней. Ключей: {_settings.GeneratedLevelKeys.Count}";
-                Debug.Log($"[LevelGen] Готово. Сгенерировано {generated} уровней. Папка: {_saveFolderAbsolute}");
+                _lastStatus = canceled
+                    ? $"Отменено пользователем. Сгенерировано {generated} уровней. Ключей: {_settings.GeneratedLevelKeys.Count}"
+                    : $"Сгенерировано {generated} уровней. Ключей: {_settings.GeneratedLevelKeys.Count}";
+                Debug.Log($"[LevelGen] {(canceled ? "Отмена." : "Готово.")} Сгенерировано {generated} уровней. Папка: {_saveFolderAbsolute}");
             }
             catch (Exception ex)
             {
+                EditorUtility.ClearProgressBar();
                 _lastStatus = "Ошибка генерации.";
                 Debug.LogError("[LevelGen] Ошибка генерации: " + ex);
             }
@@ -340,6 +358,7 @@ namespace _Project.Scripts.FlaskSequence.Editor
             if (_settings == null)
                 return null;
 
+            // Удалён лимит по времени. Остался лимит по попыткам.
             for (int attempt = 1; attempt <= _settings.MaxGenerationAttemptsPerLevel; attempt++)
             {
                 LevelData candidate = InternalGenerate(levelIndex);
@@ -361,20 +380,39 @@ namespace _Project.Scripts.FlaskSequence.Editor
 
         private LevelData InternalGenerate(int levelIndex)
         {
+            // 1) Рассчитываем «эффективный» уровень сложности с учетом капа и дрожания
+            int effectiveLevelIndex = levelIndex;
+            int cap = Mathf.Max(1, _settings.DifficultyCapLevel);
+            if (effectiveLevelIndex > cap)
+            {
+                int jitter = Mathf.Clamp(_settings.PostCapJitterRange, 0, 10000);
+                if (jitter > 0)
+                {
+                    int delta = Random.Range(-jitter, jitter + 1);
+                    effectiveLevelIndex = Mathf.Clamp(cap + delta, 1, int.MaxValue);
+                }
+                else
+                {
+                    effectiveLevelIndex = cap;
+                }
+            }
+
+            // 2) Применяем рост параметров по effectiveLevelIndex
             int fruitTypes = Mathf.Clamp(
-                _settings.MinFruitTypes + (levelIndex - 1) / _settings.LevelsPerFruitIncrease,
+                _settings.MinFruitTypes + (effectiveLevelIndex - 1) / _settings.LevelsPerFruitIncrease,
                 _settings.MinFruitTypes,
                 _settings.MaxFruitTypes);
 
             int extraEmpty = Mathf.Clamp(
-                _settings.MinExtraEmptyFlasks + (levelIndex - 1) / _settings.LevelsPerExtraEmptyFlaskIncrease,
+                _settings.MinExtraEmptyFlasks + (effectiveLevelIndex - 1) / _settings.LevelsPerExtraEmptyFlaskIncrease,
                 _settings.MinExtraEmptyFlasks,
                 _settings.MaxExtraEmptyFlasks);
 
             int capacity = _settings.FlaskCapacity;
 
+            // 3) Ограничения по общему числу колб
             int maxFlasks = _settings.MaxFlasksPerLevel;
-            int baseNeeded = fruitTypes + 1;
+            int baseNeeded = fruitTypes + 1; // обязательная пустая
             if (baseNeeded > maxFlasks)
             {
                 fruitTypes = Mathf.Clamp(maxFlasks - 1, _settings.MinFruitTypes, fruitTypes);
@@ -385,6 +423,7 @@ namespace _Project.Scripts.FlaskSequence.Editor
 
             int totalFlasks = fruitTypes + 1 + extraEmpty;
 
+            // 4) Формируем пул фруктов
             var fruits = _settings.AvailableFruitNames.Take(fruitTypes).ToList();
             int filledFlasksCount = fruitTypes;
             int emptyFlasksCount = totalFlasks - filledFlasksCount;
@@ -418,11 +457,12 @@ namespace _Project.Scripts.FlaskSequence.Editor
 
             var data = new LevelData
             {
-                LevelIndex = levelIndex,
+                LevelIndex = levelIndex, // сохраняем реальный индекс уровня
                 FlaskCapacity = capacity,
                 Flasks = flasks
             };
 
+            // 5) Фильтрация слишком простых конфигураций
             if (IsSolved(data) || (_settings.AvoidAlmostSolved && IsAlmostSolved(data)))
                 return null;
 
@@ -526,6 +566,30 @@ namespace _Project.Scripts.FlaskSequence.Editor
             return unsolved <= 1;
         }
 
+        private static Dictionary<string, string> BuildFruitCodeMap(List<List<string>> flasks)
+        {
+            var unique = new HashSet<string>();
+            foreach (var f in flasks)
+                foreach (var x in f)
+                    unique.Add(x);
+
+            var list = unique.ToList();
+            var map = new Dictionary<string, string>(list.Count);
+            const string alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (i < alphabet.Length)
+                    map[list[i]] = alphabet[i].ToString();
+                else
+                {
+                    int a = (i / alphabet.Length) % alphabet.Length;
+                    int b = i % alphabet.Length;
+                    map[list[i]] = new string(new[] { alphabet[a], alphabet[b] });
+                }
+            }
+            return map;
+        }
+
         private bool Solve(LevelData startLevel, out int solvedDepth)
         {
             solvedDepth = -1;
@@ -536,8 +600,12 @@ namespace _Project.Scripts.FlaskSequence.Editor
                 return true;
             }
 
+            int maxStates = Mathf.Max(10000, _settings.MaxSolverStates);
+            int maxDepth = Math.Max(_settings.MinSolutionMoves * 10, 50);
+
             var startState = Clone(startLevel.Flasks);
-            string startKey = Encode(startState);
+            var fruitCode = BuildFruitCodeMap(startState);
+            string startKey = EncodeFast(startState, fruitCode);
 
             var visited = new HashSet<string> { startKey };
             var queue = new Queue<(List<List<string>> state, int depth)>();
@@ -546,10 +614,11 @@ namespace _Project.Scripts.FlaskSequence.Editor
             int processed = 0;
             while (queue.Count > 0)
             {
+                if (processed > maxStates) return false;
+
                 var (state, depth) = queue.Dequeue();
                 processed++;
-                if (processed > _settings.MaxSolverStates)
-                    return false;
+                if (depth >= maxDepth) continue;
 
                 for (int fromIdx = 0; fromIdx < state.Count; fromIdx++)
                 {
@@ -564,6 +633,8 @@ namespace _Project.Scripts.FlaskSequence.Editor
                         else break;
                     }
 
+                    bool fromIsMonoFull = from.Count == capacity && from.All(x => x == topFruit);
+
                     for (int toIdx = 0; toIdx < state.Count; toIdx++)
                     {
                         if (toIdx == fromIdx) continue;
@@ -571,8 +642,14 @@ namespace _Project.Scripts.FlaskSequence.Editor
                         if (to.Count >= capacity) continue;
                         if (to.Count > 0 && to[^1] != topFruit) continue;
 
+                        bool toIsMono = to.Count > 0 && to.All(x => x == to[0]);
+
+                        if (fromIsMonoFull && toIsMono && to.Count + groupSize <= capacity && to.Count > 0 && to[0] == topFruit)
+                            continue;
+
                         int freeSlots = capacity - to.Count;
                         int moveCount = Math.Min(groupSize, freeSlots);
+                        if (moveCount <= 0) continue;
 
                         var next = Clone(state);
                         var nFrom = next[fromIdx];
@@ -584,7 +661,7 @@ namespace _Project.Scripts.FlaskSequence.Editor
                             nTo.Add(val);
                         }
 
-                        string key = Encode(next);
+                        string key = EncodeFast(next, fruitCode);
                         if (visited.Contains(key)) continue;
                         visited.Add(key);
 
@@ -612,6 +689,22 @@ namespace _Project.Scripts.FlaskSequence.Editor
                     if (flask[i] != flask[0]) return false;
             }
             return true;
+        }
+
+        private static string EncodeFast(List<List<string>> state, Dictionary<string, string> map)
+        {
+            var sb = new StringBuilder(state.Count * 8);
+            for (int i = 0; i < state.Count; i++)
+            {
+                if (i > 0) sb.Append('|');
+                var flask = state[i];
+                for (int j = 0; j < flask.Count; j++)
+                {
+                    if (j > 0) sb.Append(',');
+                    sb.Append(map[flask[j]]);
+                }
+            }
+            return sb.ToString();
         }
 
         private static string Encode(List<List<string>> state)
