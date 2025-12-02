@@ -9,14 +9,14 @@ namespace _Project.Scripts
 {
     public class ProjectInstaller : MonoBehaviour, IInstaller
     {
-        [SerializeField, Min(0)] private int _interstitialAdvShowDelaySeconds = 60;
+        //[SerializeField, Min(0)] private int _interstitialAdvShowDelaySeconds = 60;
 
         public void InstallBindings(ContainerBuilder containerBuilder)
         {
-            containerBuilder.AddSingleton(new PlayerPrefsSaves(), typeof(ISaves));
-            containerBuilder.AddSingleton(new DevAdvertising(_interstitialAdvShowDelaySeconds), typeof(IAdvertising));
-            containerBuilder.AddSingleton(new DevGameEvents(), typeof(IGameEvents));
-            containerBuilder.AddSingleton(new DevLanguageInfo(), typeof(ILanguageInfo));
+            containerBuilder.AddSingleton(new YgSaves(), typeof(ISaves));
+            containerBuilder.AddSingleton(new YgAdvertising(), typeof(IAdvertising));
+            containerBuilder.AddSingleton(new YgGameEvents(), typeof(IGameEvents));
+            containerBuilder.AddSingleton(new YgLanguageInfo(), typeof(ILanguageInfo));
         }
     }
 }
