@@ -57,7 +57,7 @@ namespace _Project.Scripts.Levels
 
             _audioService.PlayOneShot(_buttonClick);
 
-            LevelsView.UpdateView(_levelCreator.LevelsCount, _levelCreator.LoadedLevelsCount, 0);
+            //LevelsView.UpdateView(_levelCreator.LevelsCount, _levelCreator.LoadedLevelsCount, 0);
             LevelsView.Show();
         }
 

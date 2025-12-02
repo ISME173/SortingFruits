@@ -21,7 +21,7 @@ namespace _Project.Scripts.Pause
         private AudioEvent _backgroundMusic;
 
         private bool _soundActive = true;
-        private bool _musicActive = true;
+        private bool _musicActive = false;
 
         private float _lastSfxVolume = 1f;
         private float _lastUiVolume = 0.8f;
@@ -51,8 +51,8 @@ namespace _Project.Scripts.Pause
             _lastUiVolume = Math.Max(_audioService.GetCategoryVolume(AudioCategory.Ui), 0f);
             _lastMusicVolume = Math.Max(_audioService.GetCategoryVolume(AudioCategory.Music), 0f);
 
-            _soundActive = _saves.GetBool(SaveSoundActivateKey, true);
-            _musicActive = _saves.GetBool(SaveMusicActivateKey, true);
+            _soundActive = _saves.GetBool(SaveSoundActivateKey, _soundActive);
+            _musicActive = _saves.GetBool(SaveMusicActivateKey, _musicActive);
 
             if (_soundActive) SoundOn(); else SoundOff();
             if (_musicActive) MusicOn(); else MusicOff();

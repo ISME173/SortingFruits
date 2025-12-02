@@ -71,6 +71,11 @@ namespace _Project.Scripts.Levels
                 LevelButtons.Add(newLevelButton);
             }
 
+            // Сначала форсируем пересчёт лэйаута, чтобы rect/колонки стали актуальными.
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_parentForLevelButtons);
+
+            // Теперь корректно считаем высоту контейнера.
             ExpandParentHeight(levelsCount);
         }
 
@@ -120,9 +125,9 @@ namespace _Project.Scripts.Levels
 
         private void ExpandParentHeight(int totalButtons)
         {
-			_grid ??= _parentForLevelButtons.GetComponent<GridLayoutGroup>();
+            _grid ??= _parentForLevelButtons.GetComponent<GridLayoutGroup>();
 
-			int columns = 1;
+            int columns = 1;
             switch (_grid.constraint)
             {
                 case GridLayoutGroup.Constraint.FixedColumnCount:
@@ -132,10 +137,15 @@ namespace _Project.Scripts.Levels
                     // В этом режиме автоматически высота уже достаточна, можно выйти.
                     return;
                 case GridLayoutGroup.Constraint.Flexible:
-                    // Падение в простой расчет одной колонки (или можно попытаться вычислить по ширине).
-                    columns = Mathf.Max(1, Mathf.FloorToInt(
-                        (_parentForLevelButtons.rect.width + _grid.spacing.x + _grid.padding.left + _grid.padding.right) /
-                        (_grid.cellSize.x + _grid.spacing.x)));
+                    // Берём актуальную ширину после пересчёта лэйаута
+                    float availableWidth = _parentForLevelButtons.rect.width;
+                    if (availableWidth <= 0f)
+                        availableWidth = LayoutUtility.GetPreferredWidth(_parentForLevelButtons);
+
+                    float cellPlusSpacing = _grid.cellSize.x + _grid.spacing.x;
+                    float innerWidth = availableWidth - _grid.padding.left - _grid.padding.right + _grid.spacing.x;
+
+                    columns = Mathf.Max(1, Mathf.FloorToInt(innerWidth / cellPlusSpacing));
                     break;
             }
 
