@@ -88,7 +88,7 @@ namespace _Project.Scripts.FlaskSequence.Education
 
         private void OnLevelCreated(LevelData levelData)
         {
-            if (levelData.LevelIndex != 0)
+            if (_levelCreator.CurrentLevelIndex != 0)
             {
                 Dispose();
                 return;
