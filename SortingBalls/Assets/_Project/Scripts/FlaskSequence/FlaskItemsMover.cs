@@ -19,7 +19,7 @@ namespace _Project.Scripts.FlaskSequence
         private readonly Dictionary<Flask, float> FlaskYPositionInDown = new Dictionary<Flask, float>();
         private readonly Dictionary<Flask, MotionHandle> MovingFlasks = new Dictionary<Flask, MotionHandle>();
         private readonly HashSet<Flask> UsingFilling = new HashSet<Flask>();
-        private readonly HashSet<MotionHandle> MovingItemHandlers = new HashSet<MotionHandle>();
+        private readonly Dictionary<Item, MotionHandle> MovingItemHandlers = new();
         private readonly Camera CurrentCamera;
         private readonly MovingSettings MoveSettings;
         private readonly IInput CurrentInput;
@@ -79,8 +79,11 @@ namespace _Project.Scripts.FlaskSequence
 
         private void OnLevelCreated(LevelData levelData)
         {
-            foreach (var handle in MovingItemHandlers)
-                handle.TryCancel();
+            foreach (var key in MovingItemHandlers.Keys)
+            {
+                MovingItemHandlers[key].TryCancel();
+                GameObject.Destroy(key.gameObject);
+            }
             MovingItemHandlers.Clear();
 
             foreach (var key in MovingFlasks.Keys)
@@ -250,7 +253,7 @@ namespace _Project.Scripts.FlaskSequence
                         {
                             if (motionHandle != null)
                             {
-                                MovingItemHandlers.Remove(motionHandle.Value);
+                                MovingItemHandlers.Remove(item);
 
                                 if (IsMovingAnyItem == false)
                                     OnAnyItemMovingEnd?.Invoke();
@@ -273,7 +276,7 @@ namespace _Project.Scripts.FlaskSequence
                 if (!IsMovingAnyItem)
                     OnAnyItemMovingStart?.Invoke();
 
-                MovingItemHandlers.Add(motionHandle.Value);
+                MovingItemHandlers.Add(item, motionHandle.Value);
             }
         }
 
