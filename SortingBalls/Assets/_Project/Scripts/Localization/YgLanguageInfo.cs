@@ -18,6 +18,8 @@ namespace _Project.Scripts.Localization
                     return ILanguageInfo.LanguageType.Spanish;
                 case "fr":
                     return ILanguageInfo.LanguageType.French;
+                case "de":
+                    return ILanguageInfo.LanguageType.German;
                 default:
                     return ILanguageInfo.LanguageType.English;
             }
