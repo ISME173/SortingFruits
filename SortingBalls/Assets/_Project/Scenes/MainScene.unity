@@ -2682,14 +2682,14 @@ MonoBehaviour:
   _showAnimationsSettings:
     _time: 2
     _ease: 5
-    _withLoop: 0
+    _withLoop: 1
     _loopCount: -1
     _loopType: 3
   _showedLocalScale: {x: 1.2, y: 1.2, z: 1}
   _hideAnimationSettings:
     _time: 2
     _ease: 5
-    _withLoop: 0
+    _withLoop: 1
     _loopCount: 0
     _loopType: 3
   _hidedLocalScale: {x: 1, y: 1, z: 1}
