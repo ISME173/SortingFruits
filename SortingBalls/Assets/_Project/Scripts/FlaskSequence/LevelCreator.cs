@@ -1,4 +1,5 @@
 ﻿using _Project.Scripts.Audio;
+using _Project.Scripts.GameEvents;
 using _Project.Scripts.Saves;
 using Newtonsoft.Json;
 using Reflex.Attributes;
@@ -40,6 +41,7 @@ namespace _Project.Scripts.FlaskSequence
         private FlaskItemsMover _flaskItemsMover;
         private ISaves _saves;
         private IAudioService _audioService;
+        private IGameEvents _gameEvents;
         private int _currentLevelIndex = -1;
         private bool _allLevelsLoaded = false;
         private bool _forceReloadGeneration;
@@ -153,6 +155,8 @@ namespace _Project.Scripts.FlaskSequence
                 SaveCurrentLevelKey();
 
                 SetLevelStateByIndex(_currentLevelIndex, LevelState.Opened);
+
+                _gameEvents.GameReadyApi();
             }
             else
             {
@@ -181,6 +185,7 @@ namespace _Project.Scripts.FlaskSequence
                 }
             }
 
+            _saves.Save();
             _allLevelsLoaded = true;
             Debug.Log($"[LevelCreator] Все уровни загружены. Всего: {AllLevels.Count}");
         }
@@ -245,7 +250,6 @@ namespace _Project.Scripts.FlaskSequence
                 try
                 {
                     _saves.SetObject(key, result, prettyPrint: true);
-                    _saves.Save();
                 }
                 catch (Exception ex)
                 {
@@ -673,11 +677,12 @@ namespace _Project.Scripts.FlaskSequence
         }
 
         [Inject]
-        private void Initialize(ISaves saves, FlaskItemsMover flaskItemsMover, IAudioService audioService)
+        private void Initialize(ISaves saves, FlaskItemsMover flaskItemsMover, IAudioService audioService, IGameEvents gameEvents)
         {
             _saves = saves;
             _flaskItemsMover = flaskItemsMover;
             _audioService = audioService;
+            _gameEvents = gameEvents;
         }
     }
 
