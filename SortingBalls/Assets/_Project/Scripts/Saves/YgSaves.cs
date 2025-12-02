@@ -1,6 +1,7 @@
 using Newtonsoft.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using UnityEngine;
 using YG;
 using PlayerPrefs = RedefineYG.PlayerPrefs;
 
@@ -42,6 +43,12 @@ namespace _Project.Scripts.Saves
 
         public void Save()
         {
+            if (YG2.isSDKEnabled == false)
+            {
+                Debug.Log($"YG SDK is not enabled! Save failed");
+                return;
+            }
+
             YG2.SaveProgress();
         }
 
