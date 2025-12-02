@@ -152,12 +152,11 @@ namespace _Project.Scripts.FlaskSequence
                     return false;
             }
 
-            List<(Item item, Transform reservedSlot)> itemsToMove = new List<(Item, Transform)>();
+            List<Item> itemsToMove = new List<Item>();
             int maxItemsToMove = endFlask.FreeSlotsCount;
 
             UsingFilling.Add(endFlask);
 
-            // Резервируем слоты (назначаем Item в слот сразу, чтобы последующие GetFirstEmptySlotTransform возвращали следующий)
             while (maxItemsToMove > 0)
             {
                 Item peekFirstItem = startFlask.PeekFirstItem();
@@ -170,43 +169,29 @@ namespace _Project.Scripts.FlaskSequence
                         break;
                 }
 
-                Item moved = startFlask.GetFirstItem();
-                // Сохраняем целевой слот ДО фактической анимации
-                Transform slotTransform = endFlask.GetFirstEmptySlotTransform();
-                if (slotTransform == null)
-                    break;
+                Item firstItemInStartFlask = startFlask.GetFirstItem();
+                itemsToMove.Add(firstItemInStartFlask);
+                firstItemNameInEndFlask = firstItemInStartFlask.ItemName;
 
-                // Раннее логическое резервирование (оставляем как было)
-                endFlask.TryAddItem(moved);
-
-                itemsToMove.Add((moved, slotTransform));
-                firstItemNameInEndFlask = moved.ItemName;
                 maxItemsToMove--;
-            }
-
-            if (itemsToMove.Count == 0)
-            {
-                UsingFilling.Remove(endFlask);
-                return false;
             }
 
             Vector3 p1 = startFlask.SlotForSelectItems.position;
             Vector3 p2 = endFlask.SlotForSelectItems.position;
 
             _moveAllItemsCoroutine = LevelCreator.StartCoroutine(MoveAllItemsCoroutine());
+
             return true;
 
             IEnumerator MoveAllItemsCoroutine()
             {
-                WaitForSeconds delayBetween = new WaitForSeconds(MoveSettings.SecondsDelayBetweenMoveItems);
+                WaitForSeconds delatBetweenMoveItems = new WaitForSeconds(MoveSettings.SecondsDelayBetweenMoveItems);
 
                 for (int i = 0; i < itemsToMove.Count; i++)
                 {
-                    bool isLast = i == itemsToMove.Count - 1;
-
-                    MoveOneItem(itemsToMove[i].item, itemsToMove[i].reservedSlot, () =>
+                    if (i == itemsToMove.Count - 1)
                     {
-                        if (isLast)
+                        MoveOneItem(itemsToMove[i], () =>
                         {
                             UsingFilling.Remove(endFlask);
 
@@ -220,58 +205,30 @@ namespace _Project.Scripts.FlaskSequence
                             }
 
                             OnMove?.Invoke(move);
-                        }
-                    });
+                        });
+                    }
+                    else
+                    {
+                        MoveOneItem(itemsToMove[i], null);
+                    }
 
-                    yield return delayBetween;
+                    endFlask.TryAddItem(itemsToMove[i]);
+                    yield return delatBetweenMoveItems;
                 }
             }
 
-            void MoveOneItem(Item item, Transform finalSlot, Action callback)
+            void MoveOneItem(Item item, Action callback)
             {
-                if (item == null || finalSlot == null)
-                {
-                    callback?.Invoke();
-                    return;
-                }
+                Transform firstEmptySlot = endFlask.GetFirstEmptySlotTransform();
 
                 item.transform.SetParent(null);
                 Vector3 p0 = item.transform.position;
-                Vector3 p3 = finalSlot.position;
+                Vector3 p3 = firstEmptySlot.position;
 
-                MotionSequenceBuilder seq = LSequence.Create();
-                MotionHandle? handle = null;
+                MotionSequenceBuilder moveItemSequence = LSequence.Create();
+                MotionHandle? motionHandle = null;
 
-                void Finalize()
-                {
-                    if (handle != null)
-                    {
-                        MovingItemHandlers.Remove(handle.Value);
-                        if (!IsMovingAnyItem)
-                            OnAnyItemMovingEnd?.Invoke();
-                    }
-
-                    if (item != null && finalSlot != null)
-                    {
-                        item.transform.SetParent(finalSlot, true);
-                        item.transform.localPosition = Vector3.zero;
-                    }
-
-                    callback?.Invoke();
-                }
-
-                // Fallback — если из-за ошибки или отмены не дошли
-                IEnumerator Fallback()
-                {
-                    // Общее время трёх сегментов + небольшой запас
-                    float total = MoveSettings.ItemsMoveTime * 3f + 0.15f;
-                    yield return new WaitForSeconds(total);
-
-                    if (item != null && item.transform.parent != finalSlot)
-                        Finalize();
-                }
-
-                seq
+                moveItemSequence
                     .Append(LMotion.Create(p0, p1, MoveSettings.ItemsMoveTime)
                         .WithEase(MoveSettings.ItemsMoveEase)
                         .WithCancelOnError()
@@ -281,26 +238,42 @@ namespace _Project.Scripts.FlaskSequence
                         .WithCancelOnError()
                         .WithOnComplete(() =>
                         {
-                            LMotion.Create(0f, 1f,
-                                MoveSettings.ItemsMoveTime + MoveSettings.OffsetForPlaySfxAfterItemMovedInFlask)
-                                .WithOnComplete(() => endFlask.PlaySfxOnMovedItemInFlask())
-                                .RunWithoutBinding();
+                            LMotion.Create(0, 1, MoveSettings.ItemsMoveTime + MoveSettings.OffsetForPlaySfxAfterItemMovedInSlot)
+                            .WithOnComplete(() => endFlask.PlaySfxOnMovedItemInFlask())
+                            .RunWithoutBinding();
                         })
                         .BindToPosition(item.transform))
                     .Append(LMotion.Create(p2, p3, MoveSettings.ItemsMoveTime)
-                        .WithEase(Ease.OutBounce)
                         .WithCancelOnError()
-                        .WithOnComplete(Finalize)
-                        .BindToPosition(item.transform));
+                        .WithEase(Ease.OutBounce)
+                        .WithOnComplete(() =>
+                        {
+                            if (motionHandle != null)
+                            {
+                                MovingItemHandlers.Remove(motionHandle.Value);
 
-                handle = seq.Run();
+                                if (IsMovingAnyItem == false)
+                                    OnAnyItemMovingEnd?.Invoke();
+                            }
+
+                            item.transform.SetParent(firstEmptySlot, true);
+                            item.transform.localPosition = Vector3.zero;
+                            callback?.Invoke();
+                        })
+                        .Bind((progress) =>
+                        {
+                            if (item == null)
+                                return;
+
+                            item.transform.position = progress;
+                        }));
+
+                motionHandle = moveItemSequence.Run();
 
                 if (!IsMovingAnyItem)
                     OnAnyItemMovingStart?.Invoke();
 
-                MovingItemHandlers.Add(handle.Value);
-
-                LevelCreator.StartCoroutine(Fallback());
+                MovingItemHandlers.Add(motionHandle.Value);
             }
         }
 
@@ -403,7 +376,7 @@ namespace _Project.Scripts.FlaskSequence
             public float ItemsMoveTime => _itemsMoveTime;
             public Ease ItemsMoveEase => _itemsMoveEase;
 
-            public float OffsetForPlaySfxAfterItemMovedInFlask => _offsetForPlaySfxAfterItemMovedInSlot;
+            public float OffsetForPlaySfxAfterItemMovedInSlot => _offsetForPlaySfxAfterItemMovedInSlot;
 
             public float FrinkMoveTime => _frinkMoveTime;
             public Ease FrinkMoveEase => _frinkMoveEase;
