@@ -3118,7 +3118,7 @@ MonoBehaviour:
   _movingSettings:
     _itemsMoveTime: 0.3
     _itemsMoveEase: 5
-    _millisecondsDelayBetweenMoveItems: 80
+    _secondsDelayBetweenMoveItems: 0.12
     _offsetForPlaySfxAfterItemMovedInSlot: -0.2
     _frinkMoveTime: 0.2
     _frinkMoveEase: 5

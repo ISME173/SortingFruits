@@ -3,6 +3,7 @@ using _Project.Scripts.FruitsSequence.Input;
 using LitMotion;
 using LitMotion.Extensions;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,10 +25,10 @@ namespace _Project.Scripts.FlaskSequence
         private readonly IInput CurrentInput;
         private readonly LevelCreator LevelCreator;
 
-        private CancellationTokenSource _moveItemsCts = new CancellationTokenSource();
         private Flask _currentFlask;
         private MotionHandle _moveUpFrinkHandle;
         private MotionHandle _moveDownFrinkHandle;
+        private Coroutine _moveAllItemsCoroutine;
 
         public event Action OnAnyItemMovingEnd, OnAnyItemMovingStart;
         public event Action<Move> OnMove;
@@ -69,11 +70,11 @@ namespace _Project.Scripts.FlaskSequence
 
         private void OnLevelComplete(LevelData levelData)
         {
-            if (!_moveItemsCts.IsCancellationRequested)
-                _moveItemsCts.Cancel();
-
-            _moveItemsCts.Dispose();
-            _moveItemsCts = new CancellationTokenSource();
+            if (_moveAllItemsCoroutine != null)
+            {
+                LevelCreator.StopCoroutine(_moveAllItemsCoroutine);
+                _moveAllItemsCoroutine = null;
+            }
         }
 
         private void OnLevelCreated(LevelData levelData)
@@ -110,9 +111,9 @@ namespace _Project.Scripts.FlaskSequence
                 }
                 else if (_currentFlask != flask)
                 {
-                    MoveDownFlask(_currentFlask);
                     if (TryMoveItems(_currentFlask, flask))
                     {
+                        MoveDownFlask(_currentFlask);
                         _currentFlask = null;
                     }
                     else
@@ -175,19 +176,19 @@ namespace _Project.Scripts.FlaskSequence
                 maxItemsToMove--;
             }
 
-            MoveAllItems(_moveItemsCts.Token);
+            Vector3 p1 = startFlask.SlotForSelectItems.position;
+            Vector3 p2 = endFlask.SlotForSelectItems.position;
+
+            _moveAllItemsCoroutine = LevelCreator.StartCoroutine(MoveAllItemsCoroutine());
+
             return true;
 
-            async void MoveAllItems(CancellationToken ct)
+            IEnumerator MoveAllItemsCoroutine()
             {
+                WaitForSeconds delatBetweenMoveItems = new WaitForSeconds(MoveSettings.SecondsDelayBetweenMoveItems);
+
                 for (int i = 0; i < itemsToMove.Count; i++)
                 {
-                    if (ct.IsCancellationRequested)
-                    {
-                        UsingFilling.Remove(endFlask);
-                        break;
-                    }
-
                     if (i == itemsToMove.Count - 1)
                     {
                         MoveOneItem(itemsToMove[i], () =>
@@ -212,16 +213,7 @@ namespace _Project.Scripts.FlaskSequence
                     }
 
                     endFlask.TryAddItem(itemsToMove[i]);
-
-                    try
-                    {
-                        await Task.Delay(MoveSettings.MillisecondsDelayBetweenMoveItems, ct);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        UsingFilling.Remove(endFlask);
-                        break;
-                    }
+                    yield return delatBetweenMoveItems;
                 }
             }
 
@@ -229,15 +221,12 @@ namespace _Project.Scripts.FlaskSequence
             {
                 Transform firstEmptySlot = endFlask.GetFirstEmptySlotTransform();
 
+                item.transform.SetParent(null);
                 Vector3 p0 = item.transform.position;
-                Vector3 p1 = startFlask.SlotForSelectItems.position;
-                Vector3 p2 = endFlask.SlotForSelectItems.position;
                 Vector3 p3 = firstEmptySlot.position;
 
                 MotionSequenceBuilder moveItemSequence = LSequence.Create();
                 MotionHandle? motionHandle = null;
-
-                item.transform.SetParent(null);
 
                 moveItemSequence
                     .Append(LMotion.Create(p0, p1, MoveSettings.ItemsMoveTime)
@@ -245,8 +234,8 @@ namespace _Project.Scripts.FlaskSequence
                         .WithCancelOnError()
                         .BindToPosition(item.transform))
                     .Append(LMotion.Create(p1, p2, MoveSettings.ItemsMoveTime)
-                        .WithCancelOnError()
                         .WithEase(MoveSettings.ItemsMoveEase)
+                        .WithCancelOnError()
                         .WithOnComplete(() =>
                         {
                             LMotion.Create(0, 1, MoveSettings.ItemsMoveTime + MoveSettings.OffsetForPlaySfxAfterItemMovedInSlot)
@@ -362,10 +351,11 @@ namespace _Project.Scripts.FlaskSequence
             LevelCreator.LevelCreated -= OnLevelCreated;
             CurrentInput.OnTriggerDown -= SearchFlask;
 
-            if (!_moveItemsCts.IsCancellationRequested)
-                _moveItemsCts.Cancel();
-
-            _moveItemsCts.Dispose();
+            if (_moveAllItemsCoroutine != null)
+            {
+                LevelCreator.StopCoroutine(_moveAllItemsCoroutine);
+                _moveAllItemsCoroutine = null;
+            }
         }
 
         [Serializable]
@@ -374,7 +364,7 @@ namespace _Project.Scripts.FlaskSequence
             [Header("Move items")]
             [SerializeField, Min(0)] private float _itemsMoveTime;
             [SerializeField] private Ease _itemsMoveEase;
-            [SerializeField, Min(0)] private int _millisecondsDelayBetweenMoveItems;
+            [SerializeField, Min(0)] private float _secondsDelayBetweenMoveItems;
             [Space]
             [SerializeField] private float _offsetForPlaySfxAfterItemMovedInSlot;
 
@@ -386,12 +376,12 @@ namespace _Project.Scripts.FlaskSequence
             public float ItemsMoveTime => _itemsMoveTime;
             public Ease ItemsMoveEase => _itemsMoveEase;
 
-            public float OffsetForPlaySfxAfterItemMovedInSlot => _offsetForPlaySfxAfterItemMovedInSlot;  
+            public float OffsetForPlaySfxAfterItemMovedInSlot => _offsetForPlaySfxAfterItemMovedInSlot;
 
             public float FrinkMoveTime => _frinkMoveTime;
             public Ease FrinkMoveEase => _frinkMoveEase;
             public float MoveYOffsetInSelected => _moveYOffsetInSelected;
-            public int MillisecondsDelayBetweenMoveItems => _millisecondsDelayBetweenMoveItems;
+            public float SecondsDelayBetweenMoveItems => _secondsDelayBetweenMoveItems;
         }
 
         public struct Move
