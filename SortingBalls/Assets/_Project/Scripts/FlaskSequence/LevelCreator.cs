@@ -643,7 +643,6 @@ namespace _Project.Scripts.FlaskSequence
                 if (!string.IsNullOrEmpty(key))
                 {
                     _saves.SetString(SaveKey_CurrentLevel, key);
-                    _saves.Save();
                 }
             }
             catch (Exception ex)
