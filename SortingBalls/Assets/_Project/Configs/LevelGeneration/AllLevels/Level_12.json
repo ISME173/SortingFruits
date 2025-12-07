@@ -3,28 +3,34 @@
   "FlaskCapacity": 4,
   "Flasks": [
     [
-      "Pear",
       "Banana",
       "Orange",
+      "Grape",
+      "Pear"
+    ],
+    [
+      "Pear",
+      "Pear",
+      "Banana",
+      "Orange"
+    ],
+    [
+      "Apple",
+      "Banana",
+      "Grape",
       "Apple"
     ],
     [
       "Orange",
+      "Orange",
       "Pear",
-      "Apple",
-      "Orange"
+      "Grape"
     ],
     [
-      "Apple",
       "Banana",
       "Apple",
-      "Orange"
-    ],
-    [
-      "Pear",
-      "Pear",
-      "Banana",
-      "Banana"
+      "Apple",
+      "Grape"
     ],
     [],
     []
