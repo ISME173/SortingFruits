@@ -265,12 +265,19 @@ namespace _Project.Scripts.FlaskSequence.Editor
 
             double startTime = EditorApplication.timeSinceStartup;
             int generated = 0;
-            var generatedKeysLocal = new List<string>();
-
+    
             try
             {
+                if (_settings.GeneratedLevelKeys == null)
+                    _settings.GeneratedLevelKeys = new List<string>();
+
                 if (_clearAddressableKeysBeforeGen)
                     _settings.GeneratedLevelKeys.Clear();
+
+                // build quick lookup of existing keys to avoid repeated O(n) checks
+                var existingKeys = new HashSet<string>(_settings.GeneratedLevelKeys, StringComparer.OrdinalIgnoreCase);
+
+                var generatedKeysLocal = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
                 _settings.LastGenerationTimestamp = DateTime.UtcNow.Ticks;
                 _settings.ForceReloadOnNextPlay = true;
@@ -307,8 +314,11 @@ namespace _Project.Scripts.FlaskSequence.Editor
 
                     generatedKeysLocal.Add(key);
 
-                    if (!_settings.GeneratedLevelKeys.Contains(key))
+                    if (!existingKeys.Contains(key))
+                    {
                         _settings.GeneratedLevelKeys.Add(key);
+                        existingKeys.Add(key);
+                    }
                 }
 
                 EditorUtility.ClearProgressBar();
@@ -441,14 +451,24 @@ namespace _Project.Scripts.FlaskSequence.Editor
             for (int i = 0; i < emptyFlasksCount; i++)
                 flasks.Add(new List<string>(capacity));
 
+            // Размещаем фрукты в заполненные колбы — убрал LINQ-алокации, использовал однопроходный выбор случайного кандидата (reservoir-like),
+            // чтобы не создавать список индексов при каждой итерации пула.
             foreach (var fruit in pool)
             {
-                var candidateIndexes = Enumerable.Range(0, filledFlasksCount)
-                    .Where(idx => flasks[idx].Count < capacity).ToList();
-                if (candidateIndexes.Count == 0)
+                int chosen = -1;
+                int candidates = 0;
+                for (int idx = 0; idx < filledFlasksCount; idx++)
+                {
+                    if (flasks[idx].Count >= capacity) continue;
+                    candidates++;
+                    // случайный выбор индекса из текущего набора кандидатов
+                    if (Random.Range(0, candidates) == 0)
+                        chosen = idx;
+                }
+
+                if (chosen == -1)
                     break;
 
-                int chosen = candidateIndexes[Random.Range(0, candidateIndexes.Count)];
                 flasks[chosen].Add(fruit);
             }
 
@@ -471,11 +491,11 @@ namespace _Project.Scripts.FlaskSequence.Editor
 
         private void BreakFullySolvedFlasksRandom(List<List<string>> flasks, int capacity)
         {
-            var emptyIndices = flasks
-                .Select((f, i) => new { f, i })
-                .Where(x => x.f.Count == 0)
-                .Select(x => x.i)
-                .ToList();
+            var emptyIndices = new List<int>(flasks.Count);
+            for (int i = 0; i < flasks.Count; i++)
+            {
+                if (flasks[i].Count == 0) emptyIndices.Add(i);
+            }
 
             bool hasEmpty = emptyIndices.Count > 0;
 
@@ -484,7 +504,11 @@ namespace _Project.Scripts.FlaskSequence.Editor
                 var flask = flasks[i];
                 if (flask.Count != capacity) continue;
 
-                bool allSame = flask.All(x => x == flask[0]);
+                bool allSame = true;
+                for (int k = 1; k < flask.Count; k++)
+                {
+                    if (flask[k] != flask[0]) { allSame = false; break; }
+                }
                 if (!allSame) continue;
 
                 if (hasEmpty)
@@ -505,8 +529,15 @@ namespace _Project.Scripts.FlaskSequence.Editor
                     {
                         if (t == i) continue;
                         if (flasks[t].Count == 0) continue;
-                        bool allSameTarget = flasks[t].All(x => x == flasks[t][0]);
-                        if (!allSameTarget || flasks[t][0] != flask[0])
+
+                        bool allSameTarget = true;
+                        var targetList = flasks[t];
+                        for (int k = 1; k < targetList.Count; k++)
+                        {
+                            if (targetList[k] != targetList[0]) { allSameTarget = false; break; }
+                        }
+
+                        if (!allSameTarget || targetList[0] != flask[0])
                         {
                             target = t;
                             break;
@@ -555,8 +586,12 @@ namespace _Project.Scripts.FlaskSequence.Editor
                 if (flask.Count == 0) continue;
                 if (flask.Count == cap)
                 {
+                    bool mismatch = false;
                     for (int i = 1; i < flask.Count; i++)
-                        if (flask[i] != flask[0]) { unsolved++; break; }
+                    {
+                        if (flask[i] != flask[0]) { mismatch = true; break; }
+                    }
+                    if (mismatch) unsolved++;
                 }
                 else
                 {
@@ -633,7 +668,16 @@ namespace _Project.Scripts.FlaskSequence.Editor
                         else break;
                     }
 
-                    bool fromIsMonoFull = from.Count == capacity && from.All(x => x == topFruit);
+                    bool fromIsMonoFull = from.Count == capacity;
+                    if (fromIsMonoFull)
+                    {
+                        bool allSame = true;
+                        for (int k = 0; k < from.Count; k++)
+                        {
+                            if (from[k] != topFruit) { allSame = false; break; }
+                        }
+                        fromIsMonoFull = allSame;
+                    }
 
                     for (int toIdx = 0; toIdx < state.Count; toIdx++)
                     {
@@ -642,7 +686,14 @@ namespace _Project.Scripts.FlaskSequence.Editor
                         if (to.Count >= capacity) continue;
                         if (to.Count > 0 && to[^1] != topFruit) continue;
 
-                        bool toIsMono = to.Count > 0 && to.All(x => x == to[0]);
+                        bool toIsMono = to.Count > 0;
+                        if (toIsMono)
+                        {
+                            for (int k = 1; k < to.Count; k++)
+                            {
+                                if (to[k] != to[0]) { toIsMono = false; break; }
+                            }
+                        }
 
                         if (fromIsMonoFull && toIsMono && to.Count + groupSize <= capacity && to.Count > 0 && to[0] == topFruit)
                             continue;
@@ -693,7 +744,11 @@ namespace _Project.Scripts.FlaskSequence.Editor
 
         private static string EncodeFast(List<List<string>> state, Dictionary<string, string> map)
         {
-            var sb = new StringBuilder(state.Count * 8);
+            int totalItems = 0;
+            for (int i = 0; i < state.Count; i++)
+                totalItems += state[i].Count;
+
+            var sb = new StringBuilder(Math.Max(16, totalItems * 2 + state.Count * 2));
             for (int i = 0; i < state.Count; i++)
             {
                 if (i > 0) sb.Append('|');

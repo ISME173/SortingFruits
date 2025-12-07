@@ -1,0 +1,45 @@
+{
+  "LevelIndex": 442,
+  "FlaskCapacity": 4,
+  "Flasks": [
+    [
+      "Apple",
+      "Apple",
+      "Apple",
+      "Grape"
+    ],
+    [
+      "Banana",
+      "strawberry",
+      "Orange",
+      "Pear"
+    ],
+    [
+      "Orange",
+      "Grape",
+      "Pear",
+      "Pear"
+    ],
+    [
+      "strawberry",
+      "Orange",
+      "Apple",
+      "Banana"
+    ],
+    [
+      "Banana",
+      "strawberry",
+      "Orange",
+      "Pear"
+    ],
+    [
+      "Banana",
+      "Grape",
+      "strawberry",
+      "Grape"
+    ],
+    [],
+    []
+  ],
+  "LevelState": 1
+}

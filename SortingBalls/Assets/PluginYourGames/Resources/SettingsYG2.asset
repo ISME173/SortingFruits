@@ -20,8 +20,8 @@ MonoBehaviour:
     playerPhoto: demo image
     payingStatus: 0
   InterstitialAdv:
-    showFirstAdv: 0
-    interAdvInterval: 60
+    showFirstAdv: 1
+    interAdvInterval: 50
     postponeCallByFail: 0
     postponeCallTimer: 10
     labelAdvSimLabel: 0
@@ -37,7 +37,7 @@ MonoBehaviour:
     autoApplySettings: 1
     autoPauseGame: 1
     editEventSystem: 1
-    autoGRA: 1
+    autoGRA: 0
     logInEditor: 1
     archivingBuild: 1
     syncInitSDK: 0
@@ -77,8 +77,8 @@ MonoBehaviour:
     gradientBackgroundByAspectRatio:
       radial: 0
       angleInclination: 140
-      color1: {r: 0, g: 0.012376401, b: 0.3132075, a: 1}
-      color2: {r: 0, g: 0.011764706, b: 0.3137255, a: 1}
+      color1: {r: 0.13490121, g: 0.13815609, b: 0.2216981, a: 1}
+      color2: {r: 0.11011482, g: 0.114652954, b: 0.23113209, a: 1}
     pixelRatioEnable: 0
     pixelRatioValue: 1.3
     developerBuild: 0
