@@ -594,7 +594,6 @@ namespace _Project.Scripts.FlaskSequence
                     LevelCompleted?.Invoke(AllLevels[_currentLevelIndex]);
 
                     SaveLevelKey(_currentLevelIndex + 1);
-                    SaveLevels();
                 }
             }
         }
