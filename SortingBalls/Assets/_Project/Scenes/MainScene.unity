@@ -498,8 +498,6 @@ MonoBehaviour:
   _loopsCount: -1
   _loopType: 0
   _pointerPrefab: {fileID: 7046140623450411648, guid: d41920e07787d064db1e1788afffc442, type: 3}
-  _canMovePrefab: {fileID: 0}
-  _cantMovePrefab: {fileID: 0}
 --- !u!1 &154433812
 GameObject:
   m_ObjectHideFlags: 0
@@ -901,7 +899,7 @@ MonoBehaviour:
   - _languageType: 3
     _fontAsset: {fileID: 11400000, guid: e80d52e7a7ccefd44bf671e7c97bd205, type: 2}
     _textColor: {r: 1, g: 1, b: 1, a: 1}
-    _text: 
+    _text: Ayarlar
   - _languageType: 4
     _fontAsset: {fileID: 11400000, guid: e80d52e7a7ccefd44bf671e7c97bd205, type: 2}
     _textColor: {r: 1, g: 1, b: 1, a: 1}
