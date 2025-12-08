@@ -87,12 +87,58 @@ namespace _Project.Scripts.FlaskSequence
 
         private void SaveLevels()
         {
-            for (int i = 0; i < AllLevels.Count; i++)
-            {
-                _saves.SetObject(_orderedGeneratedKeys[i], AllLevels[i], true);
-            }
+            // Экономная сериализация — сохраняем только текущий открытый уровень.
+            if (_saves == null)
+                return;
 
-            _saves.Save();
+            if (_currentLevelIndex < 0 || _currentLevelIndex >= _loadedLevelKeys.Count || _currentLevelIndex >= AllLevels.Count)
+                return;
+
+            string currentKey = _loadedLevelKeys[_currentLevelIndex];
+            LevelData currentLevel = AllLevels[_currentLevelIndex];
+
+            try
+            {
+                // Удаляем все прочие сохранённые уровни (используем SetObject<LevelData>(key, null) — реализация PlayerPrefsSaves удалит ключ).
+                if (_orderedGeneratedKeys != null)
+                {
+                    foreach (var key in _orderedGeneratedKeys)
+                    {
+                        if (string.IsNullOrEmpty(key))
+                            continue;
+                        if (key == currentKey)
+                            continue;
+
+                        try
+                        {
+                            _saves.SetObject<LevelData>(key, null, prettyPrint: false);
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.LogWarning($"[LevelCreator] Не удалось удалить старую запись уровня '{key}' из ISaves: {ex.Message}");
+                        }
+                    }
+                }
+
+                // Сохраняем только текущий уровень
+                if (!string.IsNullOrEmpty(currentKey) && currentLevel != null)
+                {
+                    try
+                    {
+                        _saves.SetObject(currentKey, currentLevel, prettyPrint: true);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning($"[LevelCreator] Не удалось сохранить текущий уровень '{currentKey}' в ISaves: {ex.Message}");
+                    }
+                }
+
+                _saves.Save();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[LevelCreator] Ошибка при сохранении уровней: {ex.Message}");
+            }
         }
 
         #region Загрузка уровней
@@ -140,7 +186,7 @@ namespace _Project.Scripts.FlaskSequence
                 Debug.LogWarning("[LevelCreator] Нет настроек или списка ключей уровней.");
                 return;
             }
-               
+
             string firstKey = _orderedGeneratedKeys[0];
 
             LevelData level = await LoadLevelByKey(firstKey);
@@ -151,10 +197,9 @@ namespace _Project.Scripts.FlaskSequence
 
                 _currentLevelIndex = level.LevelIndex - 1;
 
+                SetLevelStateByIndex(_currentLevelIndex, LevelState.Opened);
                 CreateLevelView(level);
                 SaveCurrentLevelKey();
-
-                SetLevelStateByIndex(_currentLevelIndex, LevelState.Opened);
 
                 _gameEvents.GameReadyApi();
             }
@@ -169,9 +214,61 @@ namespace _Project.Scripts.FlaskSequence
             if (_orderedGeneratedKeys == null)
                 return;
 
+            // Оригинальный список для определения порядковых индексов в Addressables
+            var originalKeys = _generationSettings?.GeneratedLevelKeys;
+
+            int origCurrentIndex = -1;
+            if (originalKeys != null && _loadedLevelKeys.Count > 0)
+            {
+                // Попытаемся определить индекс текущего ключа в оригинальном списке
+                var currentKey = _loadedLevelKeys[0]; // первый загруженный ключ соответствует началу _orderedGeneratedKeys
+                origCurrentIndex = originalKeys.IndexOf(currentKey);
+            }
+
             for (int i = 1; i < _orderedGeneratedKeys.Count; i++)
             {
                 string key = _orderedGeneratedKeys[i];
+
+                if (originalKeys != null && origCurrentIndex >= 0)
+                {
+                    int origIdx = originalKeys.IndexOf(key);
+                    if (origIdx >= 0 && origIdx < origCurrentIndex)
+                    {
+                        // Этот ключ расположен в оригинальном списке до текущего — считаем уровень пройденным и не грузим его
+
+                        OnLevelStateChanged?.Invoke(origIdx, LevelState.Completed);
+                    }
+                    else
+                    {
+                        OnLevelStateChanged?.Invoke(origIdx, LevelState.Locked);
+                    }
+                }
+            }
+
+            for (int i = 1; i < _orderedGeneratedKeys.Count; i++)
+            {
+                string key = _orderedGeneratedKeys[i];
+
+                // Попробуем пропустить явно пройденные уровни, если можем определить их по позиции в оригинальном списке
+                bool skipAsPassed = false;
+                if (originalKeys != null && origCurrentIndex >= 0)
+                {
+                    int origIdx = originalKeys.IndexOf(key);
+                    if (origIdx >= 0 && origIdx < origCurrentIndex)
+                    {
+                        skipAsPassed = true;
+                    }
+                }
+
+                if (skipAsPassed)
+                {
+                    // Не загружаем контент пройденного уровня, чтобы экономить память/записи.
+                    // Просто пометим, что ключ "загружен" (вспомогательная коллекция) — это нужно для корректной работы сохранения текущего уровня.
+                    _loadedLevelKeys.Add(key);
+                    continue;
+                }
+
+
                 LevelData level = await LoadLevelByKey(key);
 
                 if (level != null)
@@ -179,13 +276,14 @@ namespace _Project.Scripts.FlaskSequence
                     AllLevels.Add(level);
                     _loadedLevelKeys.Add(key);
 
-                    SetLevelStateByIndex(level.LevelIndex - 1, level.LevelState);
-
                     LevelLoaded?.Invoke(level);
                 }
             }
 
-            _saves.Save();
+            // Сохраняем один раз после массовой загрузки (если нужно)
+            if (_saves != null)
+                _saves.Save();
+
             _allLevelsLoaded = true;
             Debug.Log($"[LevelCreator] Все уровни загружены. Всего: {AllLevels.Count}");
         }
@@ -244,19 +342,8 @@ namespace _Project.Scripts.FlaskSequence
 
             Addressables.Release(handle);
 
-            // Всегда сохраняем свежий результат (если есть), даже при принудительной перезагрузке – обновляем кэш
-            if (result != null && _saves != null)
-            {
-                try
-                {
-                    _saves.SetObject(key, result, prettyPrint: true);
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogWarning($"[LevelCreator] Не удалось сохранить уровень '{key}' в ISaves: {ex.Message}");
-                }
-            }
-
+            // Раньше тут для каждого загруженного уровня делалась запись в ISaves — это приводило к множеству операций записи.
+            // Теперь мы НЕ сохраняем все загруженные уровни автоматически. Сохраняем только текущий открытый уровень через SaveLevels / SaveLevelKey.
             return result;
         }
 
@@ -266,13 +353,18 @@ namespace _Project.Scripts.FlaskSequence
 
         private void SetLevelStateByIndex(int levelIndex, LevelState levelState)
         {
-            if (levelIndex < 0 || levelIndex > AllLevels.Count - 1)
+            LevelData levelData = AllLevels.FirstOrDefault(x => x.LevelIndex - 1 == levelIndex);
+
+            if (levelData == null)
             {
-                Debug.LogWarning($"Invalid {nameof(levelIndex)}: {levelIndex}");
+                Debug.LogWarning($"Invalid level key: {levelIndex}");
                 return;
             }
 
-            AllLevels[levelIndex].LevelState = levelState;
+            Debug.Log($"Set level {levelIndex} state to {levelState}");
+
+
+            levelData.LevelState = levelState;
             OnLevelStateChanged?.Invoke(levelIndex, levelState);
         }
 
@@ -593,6 +685,7 @@ namespace _Project.Scripts.FlaskSequence
 
                     LevelCompleted?.Invoke(AllLevels[_currentLevelIndex]);
 
+                    // Перед тем как записать новый текущий ключ, удалим предыдущую сохранённую запись уровня (чтобы в ISaves оставался только новый).
                     SaveLevelKey(_currentLevelIndex + 1);
                 }
             }
@@ -661,12 +754,37 @@ namespace _Project.Scripts.FlaskSequence
 
             try
             {
-                string key = _loadedLevelKeys[levelIndex];
-                if (!string.IsNullOrEmpty(key))
+                string newKey = _loadedLevelKeys[levelIndex];
+                if (string.IsNullOrEmpty(newKey))
+                    return;
+
+                // Удалим предыдущую сохранённую запись уровня (если была), чтобы в ISaves оставался только последний открытый.
+                try
                 {
-                    _saves.SetString(SaveKey_CurrentLevel, key);
-                    _saves.Save();
+                    if (_saves.HasKey(SaveKey_CurrentLevel))
+                    {
+                        string prevKey = _saves.GetString(SaveKey_CurrentLevel);
+                        if (!string.IsNullOrEmpty(prevKey) && prevKey != newKey)
+                        {
+                            try
+                            {
+                                _saves.SetObject<LevelData>(prevKey, null, prettyPrint: false);
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.LogWarning($"[LevelCreator] Не удалось удалить предыдущую запись уровня '{prevKey}': {ex.Message}");
+                            }
+                        }
+                    }
                 }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[LevelCreator] Ошибка при попытке удалить предыдущий ключ уровня: {ex.Message}");
+                }
+
+                // Установим новый текущий ключ и сохраним
+                _saves.SetString(SaveKey_CurrentLevel, newKey);
+                _saves.Save();
             }
             catch (Exception ex)
             {

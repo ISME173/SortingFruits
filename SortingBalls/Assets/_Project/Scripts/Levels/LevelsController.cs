@@ -3,6 +3,7 @@ using _Project.Scripts.Audio;
 using _Project.Scripts.FlaskSequence;
 using _Project.Scripts.GameEvents;
 using System;
+using UnityEngine;
 
 namespace _Project.Scripts.Levels
 {
@@ -72,6 +73,7 @@ namespace _Project.Scripts.Levels
                     LevelsView.LockLevel(levelIndex + 1);
                     break;
                 case LevelState.Completed:
+                    Debug.Log($"Complete level: {levelIndex + 1}");
                     LevelsView.CompleteLevel(levelIndex + 1);
                     break;
             }
