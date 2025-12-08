@@ -13,12 +13,6 @@
         "Level_8",
         "Level_9",
         "Level_10",
-        "Level_11",
-        "Level_12",
-        "Level_13",
-        "Level_14",
-        "Level_15",
-        "Level_16",
         "Level_17",
         "Level_18",
         "Level_19",
@@ -508,7 +502,7 @@
         "true",
         "true",
         "{\r\n  \"LevelIndex\": 1,\r\n  \"FlaskCapacity\": 4,\r\n  \"Flasks\": [\r\n    [\r\n      \"Orange\",\r\n      \"Apple\",\r\n      \"Apple\",\r\n      \"Orange\"\r\n    ],\r\n    [\r\n      \"Orange\",\r\n      \"Apple\",\r\n      \"Orange\",\r\n      \"Apple\"\r\n    ],\r\n    []\r\n  ],\r\n  \"LevelState\": 2\r\n}",
-        "Level_11",
+        "Level_17",
         "{\r\n  \"LevelIndex\": 2,\r\n  \"FlaskCapacity\": 4,\r\n  \"Flasks\": [\r\n    [\r\n      \"Orange\",\r\n      \"Orange\",\r\n      \"Apple\",\r\n      \"Apple\"\r\n    ],\r\n    [\r\n      \"Orange\",\r\n      \"Apple\",\r\n      \"Apple\",\r\n      \"Orange\"\r\n    ],\r\n    []\r\n  ],\r\n  \"LevelState\": 2\r\n}",
         "{\r\n  \"LevelIndex\": 3,\r\n  \"FlaskCapacity\": 4,\r\n  \"Flasks\": [\r\n    [\r\n      \"Orange\",\r\n      \"Apple\",\r\n      \"Apple\",\r\n      \"Orange\"\r\n    ],\r\n    [\r\n      \"Orange\",\r\n      \"Apple\",\r\n      \"Orange\",\r\n      \"Apple\"\r\n    ],\r\n    []\r\n  ],\r\n  \"LevelState\": 2\r\n}",
         "{\r\n  \"LevelIndex\": 4,\r\n  \"FlaskCapacity\": 4,\r\n  \"Flasks\": [\r\n    [\r\n      \"Apple\",\r\n      \"Apple\",\r\n      \"Orange\",\r\n      \"Apple\"\r\n    ],\r\n    [\r\n      \"Orange\",\r\n      \"Apple\",\r\n      \"Orange\",\r\n      \"Orange\"\r\n    ],\r\n    []\r\n  ],\r\n  \"LevelState\": 2\r\n}",
@@ -518,12 +512,6 @@
         "{\r\n  \"LevelIndex\": 8,\r\n  \"FlaskCapacity\": 4,\r\n  \"Flasks\": [\r\n    [\r\n      \"Apple\",\r\n      \"Apple\",\r\n      \"Apple\",\r\n      \"Orange\"\r\n    ],\r\n    [\r\n      \"Banana\",\r\n      \"Orange\",\r\n      \"Orange\",\r\n      \"Apple\"\r\n    ],\r\n    [\r\n      \"Banana\",\r\n      \"Banana\",\r\n      \"Banana\",\r\n      \"Orange\"\r\n    ],\r\n    []\r\n  ],\r\n  \"LevelState\": 2\r\n}",
         "{\r\n  \"LevelIndex\": 9,\r\n  \"FlaskCapacity\": 4,\r\n  \"Flasks\": [\r\n    [\r\n      \"Pear\",\r\n      \"Pear\",\r\n      \"Apple\",\r\n      \"Apple\"\r\n    ],\r\n    [\r\n      \"Orange\",\r\n      \"Orange\",\r\n      \"Apple\",\r\n      \"Apple\"\r\n    ],\r\n    [\r\n      \"Pear\",\r\n      \"Banana\",\r\n      \"Banana\",\r\n      \"Pear\"\r\n    ],\r\n    [\r\n      \"Banana\",\r\n      \"Banana\",\r\n      \"Orange\",\r\n      \"Orange\"\r\n    ],\r\n    []\r\n  ],\r\n  \"LevelState\": 2\r\n}",
         "{\r\n  \"LevelIndex\": 10,\r\n  \"FlaskCapacity\": 4,\r\n  \"Flasks\": [\r\n    [\r\n      \"Banana\",\r\n      \"Pear\",\r\n      \"Apple\",\r\n      \"Pear\"\r\n    ],\r\n    [\r\n      \"Pear\",\r\n      \"Orange\",\r\n      \"Banana\",\r\n      \"Orange\"\r\n    ],\r\n    [\r\n      \"Banana\",\r\n      \"Apple\",\r\n      \"Orange\",\r\n      \"Pear\"\r\n    ],\r\n    [\r\n      \"Orange\",\r\n      \"Apple\",\r\n      \"Banana\",\r\n      \"Apple\"\r\n    ],\r\n    []\r\n  ],\r\n  \"LevelState\": 2\r\n}",
-        "{\r\n  \"LevelIndex\": 11,\r\n  \"FlaskCapacity\": 4,\r\n  \"Flasks\": [\r\n    [\r\n      \"Orange\",\r\n      \"Orange\",\r\n      \"Orange\",\r\n      \"Pear\"\r\n    ],\r\n    [\r\n      \"Banana\",\r\n      \"Apple\",\r\n      \"Banana\",\r\n      \"Banana\"\r\n    ],\r\n    [\r\n      \"Pear\",\r\n      \"Banana\",\r\n      \"Apple\",\r\n      \"Pear\"\r\n    ],\r\n    [\r\n      \"Apple\",\r\n      \"Pear\",\r\n      \"Apple\",\r\n      \"Orange\"\r\n    ],\r\n    [],\r\n    []\r\n  ],\r\n  \"LevelState\": 1\r\n}",
-        "{\r\n  \"LevelIndex\": 12,\r\n  \"FlaskCapacity\": 4,\r\n  \"Flasks\": [\r\n    [\r\n      \"Orange\",\r\n      \"Banana\",\r\n      \"Orange\",\r\n      \"Pear\"\r\n    ],\r\n    [\r\n      \"Pear\",\r\n      \"Pear\",\r\n      \"Apple\",\r\n      \"Pear\"\r\n    ],\r\n    [\r\n      \"Banana\",\r\n      \"Orange\",\r\n      \"Apple\",\r\n      \"Orange\"\r\n    ],\r\n    [\r\n      \"Apple\",\r\n      \"Banana\",\r\n      \"Apple\",\r\n      \"Banana\"\r\n    ],\r\n    [],\r\n    []\r\n  ],\r\n  \"LevelState\": 1\r\n}",
-        "{\r\n  \"LevelIndex\": 13,\r\n  \"FlaskCapacity\": 4,\r\n  \"Flasks\": [\r\n    [\r\n      \"Grape\",\r\n      \"Pear\",\r\n      \"Apple\",\r\n      \"Apple\"\r\n    ],\r\n    [\r\n      \"Pear\",\r\n      \"Banana\",\r\n      \"Pear\",\r\n      \"Banana\"\r\n    ],\r\n    [\r\n      \"Orange\",\r\n      \"Orange\",\r\n      \"Grape\",\r\n      \"Orange\"\r\n    ],\r\n    [\r\n      \"Banana\",\r\n      \"Apple\",\r\n      \"Apple\",\r\n      \"Grape\"\r\n    ],\r\n    [\r\n      \"Grape\",\r\n      \"Banana\",\r\n      \"Orange\",\r\n      \"Pear\"\r\n    ],\r\n    [],\r\n    []\r\n  ],\r\n  \"LevelState\": 1\r\n}",
-        "{\r\n  \"LevelIndex\": 14,\r\n  \"FlaskCapacity\": 4,\r\n  \"Flasks\": [\r\n    [\r\n      \"Pear\",\r\n      \"Grape\",\r\n      \"Grape\",\r\n      \"Pear\"\r\n    ],\r\n    [\r\n      \"Orange\",\r\n      \"Banana\",\r\n      \"Grape\",\r\n      \"Banana\"\r\n    ],\r\n    [\r\n      \"Orange\",\r\n      \"Banana\",\r\n      \"Banana\",\r\n      \"Grape\"\r\n    ],\r\n    [\r\n      \"Apple\",\r\n      \"Apple\",\r\n      \"Pear\",\r\n      \"Orange\"\r\n    ],\r\n    [\r\n      \"Pear\",\r\n      \"Apple\",\r\n      \"Apple\",\r\n      \"Orange\"\r\n    ],\r\n    [],\r\n    []\r\n  ],\r\n  \"LevelState\": 1\r\n}",
-        "{\r\n  \"LevelIndex\": 15,\r\n  \"FlaskCapacity\": 4,\r\n  \"Flasks\": [\r\n    [\r\n      \"Banana\",\r\n      \"Orange\",\r\n      \"Pear\",\r\n      \"Banana\"\r\n    ],\r\n    [\r\n      \"Grape\",\r\n      \"Orange\",\r\n      \"Orange\",\r\n      \"Orange\"\r\n    ],\r\n    [\r\n      \"Apple\",\r\n      \"Pear\",\r\n      \"Apple\",\r\n      \"Pear\"\r\n    ],\r\n    [\r\n      \"Banana\",\r\n      \"Apple\",\r\n      \"Grape\",\r\n      \"Grape\"\r\n    ],\r\n    [\r\n      \"Apple\",\r\n      \"Banana\",\r\n      \"Pear\",\r\n      \"Grape\"\r\n    ],\r\n    [],\r\n    []\r\n  ],\r\n  \"LevelState\": 1\r\n}",
-        "{\r\n  \"LevelIndex\": 16,\r\n  \"FlaskCapacity\": 4,\r\n  \"Flasks\": [\r\n    [\r\n      \"Orange\",\r\n      \"Pear\",\r\n      \"Grape\",\r\n      \"Apple\"\r\n    ],\r\n    [\r\n      \"Banana\",\r\n      \"Pear\",\r\n      \"Banana\",\r\n      \"Orange\"\r\n    ],\r\n    [\r\n      \"Apple\",\r\n      \"Pear\",\r\n      \"Grape\",\r\n      \"Orange\"\r\n    ],\r\n    [\r\n      \"Banana\",\r\n      \"Grape\",\r\n      \"Apple\",\r\n      \"Apple\"\r\n    ],\r\n    [\r\n      \"Banana\",\r\n      \"Pear\",\r\n      \"Grape\",\r\n      \"Orange\"\r\n    ],\r\n    [],\r\n    []\r\n  ],\r\n  \"LevelState\": 1\r\n}",
         "{\r\n  \"LevelIndex\": 17,\r\n  \"FlaskCapacity\": 4,\r\n  \"Flasks\": [\r\n    [\r\n      \"Grape\",\r\n      \"Orange\",\r\n      \"Pear\",\r\n      \"Pear\"\r\n    ],\r\n    [\r\n      \"Pear\",\r\n      \"Orange\",\r\n      \"Pear\",\r\n      \"Banana\"\r\n    ],\r\n    [\r\n      \"strawberry\",\r\n      \"strawberry\",\r\n      \"Grape\",\r\n      \"Banana\"\r\n    ],\r\n    [\r\n      \"Banana\",\r\n      \"Orange\",\r\n      \"strawberry\",\r\n      \"Apple\"\r\n    ],\r\n    [\r\n      \"Apple\",\r\n      \"Orange\",\r\n      \"strawberry\",\r\n      \"Apple\"\r\n    ],\r\n    [\r\n      \"Banana\",\r\n      \"Grape\",\r\n      \"Apple\",\r\n      \"Grape\"\r\n    ],\r\n    [],\r\n    []\r\n  ],\r\n  \"LevelState\": 1\r\n}",
         "{\r\n  \"LevelIndex\": 18,\r\n  \"FlaskCapacity\": 4,\r\n  \"Flasks\": [\r\n    [\r\n      \"Apple\",\r\n      \"Pear\",\r\n      \"Banana\",\r\n      \"Orange\"\r\n    ],\r\n    [\r\n      \"Apple\",\r\n      \"strawberry\",\r\n      \"Orange\",\r\n      \"Pear\"\r\n    ],\r\n    [\r\n      \"Grape\",\r\n      \"strawberry\",\r\n      \"strawberry\",\r\n      \"Banana\"\r\n    ],\r\n    [\r\n      \"Orange\",\r\n      \"strawberry\",\r\n      \"Banana\",\r\n      \"Orange\"\r\n    ],\r\n    [\r\n      \"Grape\",\r\n      \"Apple\",\r\n      \"Banana\",\r\n      \"Pear\"\r\n    ],\r\n    [\r\n      \"Pear\",\r\n      \"Grape\",\r\n      \"Apple\",\r\n      \"Grape\"\r\n    ],\r\n    [],\r\n    []\r\n  ],\r\n  \"LevelState\": 1\r\n}",
         "{\r\n  \"LevelIndex\": 19,\r\n  \"FlaskCapacity\": 4,\r\n  \"Flasks\": [\r\n    [\r\n      \"strawberry\",\r\n      \"Grape\",\r\n      \"Banana\",\r\n      \"strawberry\"\r\n    ],\r\n    [\r\n      \"Grape\",\r\n      \"Orange\",\r\n      \"Grape\",\r\n      \"Apple\"\r\n    ],\r\n    [\r\n      \"Orange\",\r\n      \"Apple\",\r\n      \"Grape\",\r\n      \"Orange\"\r\n    ],\r\n    [\r\n      \"Banana\",\r\n      \"Pear\",\r\n      \"Apple\",\r\n      \"Banana\"\r\n    ],\r\n    [\r\n      \"Orange\",\r\n      \"Pear\",\r\n      \"Pear\",\r\n      \"Banana\"\r\n    ],\r\n    [\r\n      \"Pear\",\r\n      \"strawberry\",\r\n      \"strawberry\",\r\n      \"Apple\"\r\n    ],\r\n    [],\r\n    []\r\n  ],\r\n  \"LevelState\": 1\r\n}",
@@ -1011,8 +999,12 @@
     ],
     "floatKeys": [],
     "floatValues": [],
-    "intKeys": [],
-    "intValues": [],
+    "intKeys": [
+        "Save_bonuses_count_to_bonus_'_Project.Scripts.FlaskSequence.Bonuses.CancelLastMoveBonus'"
+    ],
+    "intValues": [
+        1
+    ],
     "intExample": 5,
     "strExample": "Hello!",
     "boolExample": [
@@ -1021,5 +1013,5 @@
         false,
         false
     ],
-    "idSave": 151
+    "idSave": 171
 }

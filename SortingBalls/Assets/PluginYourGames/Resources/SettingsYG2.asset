@@ -21,12 +21,12 @@ MonoBehaviour:
     payingStatus: 0
   InterstitialAdv:
     showFirstAdv: 1
-    interAdvInterval: 50
+    interAdvInterval: 55
     postponeCallByFail: 0
     postponeCallTimer: 10
     labelAdvSimLabel: 0
   RewardedAdv:
-    skipInterAdvAfterReward: 0
+    skipInterAdvAfterReward: 1
     labelAdvSimLabel: 0
   Storage:
     saveLocal: 0
