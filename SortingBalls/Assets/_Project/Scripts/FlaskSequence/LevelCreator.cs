@@ -383,7 +383,7 @@ namespace _Project.Scripts.FlaskSequence
             _currentLevelIndex = nextIndex;
             SetLevelStateByIndex(_currentLevelIndex, LevelState.Opened);
 
-            CreateLevelView(AllLevels[_currentLevelIndex]);
+            CreateLevelView(AllLevels.Find(x => x.LevelIndex - 1 == _currentLevelIndex));
 
             // Сохраняем выбранный текущий уровень
             SaveCurrentLevelKey();
@@ -397,7 +397,7 @@ namespace _Project.Scripts.FlaskSequence
                 Debug.LogWarning("[LevelCreator] Текущий индекс уровня некорректен.");
                 return;
             }
-            CreateLevelView(AllLevels[_currentLevelIndex]);
+            CreateLevelView(AllLevels.Find(x => x.LevelIndex - 1 == _currentLevelIndex));
         }
 
         public void LoadLevelByIndex(int index)

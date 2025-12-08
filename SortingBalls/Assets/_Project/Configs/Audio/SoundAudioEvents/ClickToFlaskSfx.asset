@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f96b0d9fee971847828c222912c9faf, type: 3}
   m_Name: ClickToFlaskSfx
   m_EditorClassIdentifier: 
-  _clip: {fileID: 8300000, guid: 13d1229c89e23934f9665024afcaaf24, type: 3}
+  _clip: {fileID: 8300000, guid: c34dcabead74c4c4d9ea4aa2b2d2b5f5, type: 3}
   _category: 1
-  _volume: 0.795
-  _pitch: 0.9
+  _volume: 0.598
+  _pitch: 1.23
   _loop: 0
   _useSpatialBlend: 0
   _spatialBlend: 0
