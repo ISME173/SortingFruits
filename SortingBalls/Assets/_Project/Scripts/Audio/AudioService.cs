@@ -213,6 +213,33 @@ namespace _Project.Scripts.Audio
             _root.gameObject.AddComponent<AutoRelease>().Init(pooled, true);
         }
 
+        public void PlayOneShot(AudioEvent audioEvent, Vector3 position)
+        {
+            if (audioEvent == null || audioEvent.Clip == null)
+                return;
+
+            if (IsMutedOrZero(audioEvent.Category))
+                return;
+
+            var pooled = GetFree();
+            pooled.CurrentEvent = audioEvent;
+            pooled.Source.pitch = audioEvent.Pitch;
+            pooled.Source.spatialBlend = 0;
+
+            pooled.Source.transform.position = position;
+
+            if (_categoryGroups.TryGetValue(audioEvent.Category, out var group))
+                pooled.Source.outputAudioMixerGroup = group;
+
+            // Фоллбек: множим громкость клипа на категорию
+            float categoryScalar = GetEffectiveCategoryScalar(audioEvent.Category);
+            pooled.Source.PlayOneShot(audioEvent.Clip, audioEvent.Volume * categoryScalar);
+
+            _root.gameObject.AddComponent<AutoRelease>().Init(pooled, true);
+
+            Debug.Log($"Play one shot settings.\nClip: {audioEvent.Clip.name}\nVolume: {pooled.Source.volume}\n Pitch: {pooled.Source.pitch} \n Spatial Blend: {pooled.Source.spatialBlend}\n Position: {position}");
+        }
+
         private bool IsMutedOrZero(AudioCategory category)
         {
             return (_categoryMuted.TryGetValue(category, out var muted) && muted) ||
