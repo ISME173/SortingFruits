@@ -7,6 +7,7 @@ namespace _Project.Scripts.Audio
         void Play(AudioEvent audioEvent);
         void PlayAt(AudioEvent audioEvent, Vector3 position);
         void PlayOneShot(AudioEvent audioEvent);
+        void PlayOneShot(AudioEvent audioEvent, Vector3 position);
         void Stop(AudioEvent audioEvent);
         void StopAllByCategory(AudioCategory category);
 

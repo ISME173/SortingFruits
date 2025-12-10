@@ -78,7 +78,7 @@ namespace _Project.Scripts.FlaskSequence
 
         public void PlaySfxOnClickedToFlask()
         {
-            _audioService.PlayOneShot(_onClickToFlaskSoundEffect);
+            _audioService.PlayOneShot(_onClickToFlaskSoundEffect, transform.position);
         }
 
         public void PlaySfxOnMovedItemInFlask()
