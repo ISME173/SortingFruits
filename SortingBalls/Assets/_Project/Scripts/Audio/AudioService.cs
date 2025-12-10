@@ -23,6 +23,9 @@ namespace _Project.Scripts.Audio
 
         private readonly Dictionary<AudioCategory, bool> _categoryMuted = new();
 
+        // Новое: отслеживание валидности параметров микшера для категории
+        private readonly Dictionary<AudioCategory, bool> _mixerParamValid = new();
+
         public AudioService(
             MonoBehaviour runner,
             ISaves saves,
@@ -40,14 +43,13 @@ namespace _Project.Scripts.Audio
             _root = new GameObject("[AudioService]").transform;
             Object.DontDestroyOnLoad(_root.gameObject);
 
-            // Валидация конфигурации микшера
+            // Проверка конфигурации микшера
             ValidateMixerConfig();
 
             InitCategory(AudioCategory.Music, MusicVolumeKey, 0.8f);
             InitCategory(AudioCategory.Sfx, SfxVolumeKey, 1f);
             InitCategory(AudioCategory.Ui, UiVolumeKey, 1f);
 
-            // по умолчанию все категории не заглушены
             _categoryMuted[AudioCategory.Music] = false;
             _categoryMuted[AudioCategory.Sfx] = false;
             _categoryMuted[AudioCategory.Ui] = false;
@@ -65,29 +67,39 @@ namespace _Project.Scripts.Audio
             // SFX pool
             for (int i = 0; i < _initialPoolSize; i++)
                 CreateNewPoolSource();
+
+            // Безопасность для WebGL/браузеров: убеждаемся, что слушатель не приглушен
+#if UNITY_WEBGL && !UNITY_EDITOR
+            AudioListener.volume = 1f;
+#endif
         }
 
         private void ValidateMixerConfig()
         {
             if (_mixer == null)
             {
-                Debug.LogWarning("[AudioService] AudioMixer не задан — категории не будут регулироваться.");
+                Debug.LogWarning("[AudioService] AudioMixer не задан и категории не будут обрабатываться.");
+                // Все категории считаем как «параметр невалиден», будем использовать фоллбек громкости источника
+                _mixerParamValid[AudioCategory.Music] = false;
+                _mixerParamValid[AudioCategory.Sfx] = false;
+                _mixerParamValid[AudioCategory.Ui] = false;
                 return;
             }
 
             foreach (var kv in _categoryVolumeParams)
             {
-                if (!_mixer.GetFloat(kv.Value, out _))
+                bool hasParam = _mixer.GetFloat(kv.Value, out _);
+                if (!hasParam)
                 {
-                    // если параметр не существует, SetFloat потом не сработает
-                    Debug.LogWarning($"[AudioService] В AudioMixer не найден Exposed параметр '{kv.Value}' для категории {kv.Key}. Проверьте имена.");
+                    Debug.LogWarning($"[AudioService] В AudioMixer не найден Exposed параметр '{kv.Value}' для категории {kv.Key}. Будет использован фоллбек громкости источника.");
                 }
+                _mixerParamValid[kv.Key] = hasParam;
             }
 
             foreach (var kv in _categoryGroups)
             {
                 if (kv.Value == null)
-                    Debug.LogWarning($"[AudioService] Не назначена AudioMixerGroup для категории {kv.Key}. Источники не попадут в микшер и регулироваться не будут.");
+                    Debug.LogWarning($"[AudioService] Не настроен AudioMixerGroup для категории {kv.Key}. Проверьте связи в микшере и группах на сцене.");
             }
         }
 
@@ -103,6 +115,8 @@ namespace _Project.Scripts.Audio
             var go = new GameObject("PooledAudioSource");
             go.transform.SetParent(_root);
             var src = go.AddComponent<AudioSource>();
+            // Безопасный дефолт: 2D для единообразия громкости UI/SFX
+            src.spatialBlend = 0f;
             _pool.Add(new PooledAudioSource { Source = src, Busy = false });
         }
 
@@ -133,7 +147,6 @@ namespace _Project.Scripts.Audio
                 return;
             }
 
-            // Гейтим проигрывание по mute/нулевому уровню
             if (IsMutedOrZero(audioEvent.Category))
                 return;
 
@@ -143,7 +156,10 @@ namespace _Project.Scripts.Audio
             if (_categoryGroups.TryGetValue(audioEvent.Category, out var group))
                 pooled.Source.outputAudioMixerGroup = group;
 
-            pooled.Source.volume = audioEvent.Volume;
+            // Применяем фоллбек громкости источника, если параметр микшера невалиден
+            float categoryScalar = GetEffectiveCategoryScalar(audioEvent.Category);
+            pooled.Source.volume = audioEvent.Volume * categoryScalar;
+
             pooled.Source.Play();
 
             if (!audioEvent.Loop)
@@ -155,7 +171,6 @@ namespace _Project.Scripts.Audio
             if (audioEvent == null || audioEvent.Clip == null)
                 return;
 
-            // FIX: учитывать mute-флаг
             if (IsMutedOrZero(audioEvent.Category))
                 return;
 
@@ -165,7 +180,10 @@ namespace _Project.Scripts.Audio
             if (_categoryGroups.TryGetValue(audioEvent.Category, out var group))
                 pooled.Source.outputAudioMixerGroup = group;
 
-            pooled.Source.volume = audioEvent.Volume;
+            // Для позиционных источников также учитываем категорию через фоллбек
+            float categoryScalar = GetEffectiveCategoryScalar(audioEvent.Category);
+            pooled.Source.volume = audioEvent.Volume * categoryScalar;
+
             pooled.Source.Play();
 
             if (!audioEvent.Loop)
@@ -177,7 +195,6 @@ namespace _Project.Scripts.Audio
             if (audioEvent == null || audioEvent.Clip == null)
                 return;
 
-            // FIX: учитывать mute-флаг
             if (IsMutedOrZero(audioEvent.Category))
                 return;
 
@@ -189,7 +206,10 @@ namespace _Project.Scripts.Audio
             if (_categoryGroups.TryGetValue(audioEvent.Category, out var group))
                 pooled.Source.outputAudioMixerGroup = group;
 
-            pooled.Source.PlayOneShot(audioEvent.Clip, audioEvent.Volume);
+            // Фоллбек: множим громкость клипа на категорию
+            float categoryScalar = GetEffectiveCategoryScalar(audioEvent.Category);
+            pooled.Source.PlayOneShot(audioEvent.Clip, audioEvent.Volume * categoryScalar);
+
             _root.gameObject.AddComponent<AutoRelease>().Init(pooled, true);
         }
 
@@ -274,7 +294,7 @@ namespace _Project.Scripts.Audio
             return _categoryMuted.TryGetValue(category, out var muted) && muted;
         }
 
-        // применять к микшеру эффективную громкость (с учётом mute)
+        // Применение громкости через микшер (с учетом mute)
         private void ApplyMixerVolume(AudioCategory category)
         {
             if (_mixer == null) return;
@@ -287,8 +307,25 @@ namespace _Project.Scripts.Audio
 
             float dB = LinearToDecibels(effectiveLinear);
             bool ok = _mixer.SetFloat(paramName, dB);
+            _mixerParamValid[category] = ok;
+
             if (!ok)
-                Debug.LogWarning($"[AudioService] Не удалось установить параметр микшера '{paramName}' (категория {category}). Проверьте, что параметр Exposed и имя совпадает.");
+                Debug.LogWarning($"[AudioService] Не удалось установить значение параметра '{paramName}' (категория {category}). Проверьте, что параметр Exposed и доступен в билде. Будет использован фоллбек громкости источника.");
+        }
+
+        // Возвращает линейный коэффициент категории, если параметр микшера недоступен.
+        private float GetEffectiveCategoryScalar(AudioCategory category)
+        {
+            bool muted = _categoryMuted.TryGetValue(category, out var m) && m;
+            float baseLinear = _categoryLinearVolumes.TryGetValue(category, out var v) ? v : 1f;
+            float effectiveLinear = muted ? 0f : baseLinear;
+
+            // Если параметр микшера валиден — источниковую громкость не трогаем (вернем 1f)
+            if (_mixer != null && _mixerParamValid.TryGetValue(category, out var valid) && valid)
+                return 1f;
+
+            // Иначе — применим коэффициент категории на уровне источника
+            return effectiveLinear;
         }
 
         private float LinearToDecibels(float linear)
