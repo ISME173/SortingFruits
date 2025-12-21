@@ -13,7 +13,7 @@ https://github.com/user-attachments/assets/f43e355b-2c12-4188-b476-bfdd38cfa1dc
 - Библиотека анимаций LitMotion (аналог DOTween)
 - DI Container Reflex
 - Newtonsoft Json
-- Addrassables
+- Addressables
 - Атрибуты для инспектора NaughtyAttributes
 - YG Plugin 2
 - Так-же активно пользовался GitHub Copilot'ом в Visual Studio
