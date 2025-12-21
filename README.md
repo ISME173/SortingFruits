@@ -18,3 +18,12 @@ https://github.com/user-attachments/assets/f43e355b-2c12-4188-b476-bfdd38cfa1dc
 
 ## ⚙️ Как запустить проект
 Проект создан на версии Unity 2022.3.61f1. [Скачать версию с официального сайта](https://unity.com/ru/releases/editor/whats-new/2022.3.61f1#installs).
+
+### Установка
+1.  Склонируйте репозиторий.
+2.  Откройте проект [на версии Unity 2022.3.61f1](https://unity.com/ru/releases/editor/whats-new/2022.3.61f1#installs).
+4.  Откройте сцену `MainScene` из папки `Assets/_Project/Scenes/`.
+5.  Запустите сцену
+
+## 📧 Контакты
+Telegram: [@ISME327](https://t.me/ISME327)
