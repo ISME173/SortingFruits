@@ -25,5 +25,7 @@ https://github.com/user-attachments/assets/f43e355b-2c12-4188-b476-bfdd38cfa1dc
 4.  Откройте сцену `MainScene` из папки `Assets/_Project/Scenes/`.
 5.  Запустите сцену
 
-## 📧 Контакты
-Telegram: [@ISME327](https://t.me/ISME327)
+## 📧 Контакты разработчика
+**Telegram:** [@ISME327](https://t.me/ISME327)
+
+**Почта:** ramishismatov96@gmail.com 
