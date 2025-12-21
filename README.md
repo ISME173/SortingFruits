@@ -17,4 +17,4 @@ https://github.com/user-attachments/assets/f43e355b-2c12-4188-b476-bfdd38cfa1dc
 - Так-же активно пользовался GitHub Copilot'ом в Visual Studio
 
 ## ⚙️ Как запустить проект
-Проект создан на версии Unity 2022.3.61f1. [Скачать версию с официального сайта]([https://unity.com/download](https://unity.com/ru/releases/editor/whats-new/2022.3.61f1#installs)).
+Проект создан на версии Unity 2022.3.61f1. [Скачать версию с официального сайта](https://unity.com/ru/releases/editor/whats-new/2022.3.61f1#installs).
