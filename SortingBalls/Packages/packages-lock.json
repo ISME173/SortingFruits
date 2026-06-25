@@ -322,6 +322,12 @@
       },
       "url": "https://packages.unity.com"
     },
+    "ru.rustore.core": {
+      "version": "file:C:/Users/doof3/Downloads/ru.rustore.core-10.5.0.tgz",
+      "depth": 0,
+      "source": "local-tarball",
+      "dependencies": {}
+    },
     "com.unity.modules.ai": {
       "version": "1.0.0",
       "depth": 0,
