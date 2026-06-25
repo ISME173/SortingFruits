@@ -322,6 +322,14 @@
       },
       "url": "https://packages.unity.com"
     },
+    "ru.rustore.billing": {
+      "version": "file:C:/Users/doof3/Downloads/ru.rustore.billing-10.5.0.tgz",
+      "depth": 0,
+      "source": "local-tarball",
+      "dependencies": {
+        "ru.rustore.core": "10.5.0"
+      }
+    },
     "ru.rustore.core": {
       "version": "file:C:/Users/doof3/Downloads/ru.rustore.core-10.5.0.tgz",
       "depth": 0,
