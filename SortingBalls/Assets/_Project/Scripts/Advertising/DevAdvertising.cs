@@ -17,6 +17,16 @@ namespace _Project.Scripts.Advertising
 
         public bool CanShowInterstitial() => _canShowInterstitial;
 
+        public void Dispose()
+        {
+            Debug.Log("<color=white>DevAdvertising disposed!</color>");
+        }
+
+        public void Initialize()
+        {
+            Debug.Log("<color=white>DevAdvertising initialized!</color>");
+        }
+
         public void ShowInterstitial(Action onSuccess, Action onError)
         {
             if (_canShowInterstitial == false)

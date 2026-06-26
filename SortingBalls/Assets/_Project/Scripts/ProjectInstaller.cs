@@ -14,7 +14,11 @@ namespace _Project.Scripts
         public void InstallBindings(ContainerBuilder containerBuilder)
         {
             containerBuilder.AddSingleton(new PlayerPrefsSaves(), typeof(ISaves));
-            containerBuilder.AddSingleton(new DevAdvertising(_interstitialAdvShowDelaySeconds), typeof(IAdvertising));
+
+            var advertising = new DevAdvertising(_interstitialAdvShowDelaySeconds);
+            advertising.Initialize();
+            containerBuilder.AddSingleton(advertising, typeof(IAdvertising));
+
             containerBuilder.AddSingleton(new DevGameEvents(), typeof(IGameEvents));
             containerBuilder.AddSingleton(new DevLanguageInfo(), typeof(ILanguageInfo));
         }
