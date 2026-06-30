@@ -698,6 +698,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: CancelLastMove
       objectReference: {fileID: 0}
+    - target: {fileID: 3693090409331368484, guid: b51d297ecbaeacb46b2e00925993671b, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4602742288266371011, guid: b51d297ecbaeacb46b2e00925993671b, type: 3}
       propertyPath: _startBonusesCount
       value: 2
@@ -3649,6 +3653,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: CreateFlaskBonus
       objectReference: {fileID: 0}
+    - target: {fileID: 1290560372325480935, guid: 8be0abc73b53eaa489788ded159e40c9, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1292776734851712373, guid: 8be0abc73b53eaa489788ded159e40c9, type: 3}
       propertyPath: _startBonusesCount
       value: 1
@@ -5299,7 +5307,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 22400762, guid: 67117722a812a2e46ab8cb8eafbf5f5e, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -0.0000076293945
+      value: -0.0000038146973
       objectReference: {fileID: 0}
     - target: {fileID: 22426080, guid: 67117722a812a2e46ab8cb8eafbf5f5e, type: 3}
       propertyPath: m_AnchorMax.x
