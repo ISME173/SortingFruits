@@ -1,4 +1,5 @@
 using _Project.Scripts.Saves;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
@@ -16,6 +17,9 @@ namespace _Project.Scripts.Audio
         private readonly MusicPlayer _musicPlayer;
         private readonly ISaves _saves;
         private readonly AudioMixer _mixer;
+        private readonly MonoBehaviour _runner;
+
+        private Coroutine _releaseCoroutine;
 
         private const string MusicVolumeKey = "music_volume";
         private const string SfxVolumeKey = "sfx_volume";
@@ -23,7 +27,7 @@ namespace _Project.Scripts.Audio
 
         private readonly Dictionary<AudioCategory, bool> _categoryMuted = new();
 
-        // Новое: отслеживание валидности параметров микшера для категории
+        // :      
         private readonly Dictionary<AudioCategory, bool> _mixerParamValid = new();
 
         public AudioService(
@@ -34,6 +38,7 @@ namespace _Project.Scripts.Audio
             Dictionary<AudioCategory, string> categoryVolumeParams,
             int initialPoolSize = 10)
         {
+            _runner = runner;
             _saves = saves;
             _mixer = mixer;
             _categoryGroups = categoryGroups;
@@ -43,7 +48,7 @@ namespace _Project.Scripts.Audio
             _root = new GameObject("[AudioService]").transform;
             Object.DontDestroyOnLoad(_root.gameObject);
 
-            // Проверка конфигурации микшера
+            //   
             ValidateMixerConfig();
 
             InitCategory(AudioCategory.Music, MusicVolumeKey, 0.8f);
@@ -68,7 +73,7 @@ namespace _Project.Scripts.Audio
             for (int i = 0; i < _initialPoolSize; i++)
                 CreateNewPoolSource();
 
-            // Безопасность для WebGL/браузеров: убеждаемся, что слушатель не приглушен
+            //   WebGL/: ,    
 #if UNITY_WEBGL && !UNITY_EDITOR
             AudioListener.volume = 1f;
 #endif
@@ -78,8 +83,8 @@ namespace _Project.Scripts.Audio
         {
             if (_mixer == null)
             {
-                Debug.LogWarning("[AudioService] AudioMixer не задан и категории не будут обрабатываться.");
-                // Все категории считаем как «параметр невалиден», будем использовать фоллбек громкости источника
+                Debug.LogWarning("[AudioService] AudioMixer       .");
+                //      ,     
                 _mixerParamValid[AudioCategory.Music] = false;
                 _mixerParamValid[AudioCategory.Sfx] = false;
                 _mixerParamValid[AudioCategory.Ui] = false;
@@ -91,7 +96,7 @@ namespace _Project.Scripts.Audio
                 bool hasParam = _mixer.GetFloat(kv.Value, out _);
                 if (!hasParam)
                 {
-                    Debug.LogWarning($"[AudioService] В AudioMixer не найден Exposed параметр '{kv.Value}' для категории {kv.Key}. Будет использован фоллбек громкости источника.");
+                    Debug.LogWarning($"[AudioService]  AudioMixer   Exposed  '{kv.Value}'   {kv.Key}.     .");
                 }
                 _mixerParamValid[kv.Key] = hasParam;
             }
@@ -99,7 +104,7 @@ namespace _Project.Scripts.Audio
             foreach (var kv in _categoryGroups)
             {
                 if (kv.Value == null)
-                    Debug.LogWarning($"[AudioService] Не настроен AudioMixerGroup для категории {kv.Key}. Проверьте связи в микшере и группах на сцене.");
+                    Debug.LogWarning($"[AudioService]   AudioMixerGroup   {kv.Key}.        .");
             }
         }
 
@@ -115,7 +120,7 @@ namespace _Project.Scripts.Audio
             var go = new GameObject("PooledAudioSource");
             go.transform.SetParent(_root);
             var src = go.AddComponent<AudioSource>();
-            // Безопасный дефолт: 2D для единообразия громкости UI/SFX
+            //  : 2D    UI/SFX
             src.spatialBlend = 0f;
             _pool.Add(new PooledAudioSource { Source = src, Busy = false });
         }
@@ -126,14 +131,93 @@ namespace _Project.Scripts.Audio
             {
                 if (!_pool[i].Busy || !_pool[i].Source.isPlaying)
                 {
+                    ResetPooledSource(_pool[i]);
                     _pool[i].Busy = true;
                     return _pool[i];
                 }
             }
+
             CreateNewPoolSource();
             var created = _pool[_pool.Count - 1];
             created.Busy = true;
             return created;
+        }
+
+        private static void ResetPooledSource(PooledAudioSource pooled)
+        {
+            pooled.UsesOneShot = false;
+            pooled.OneShotReleaseTime = 0f;
+            pooled.CurrentEvent = null;
+        }
+
+        private void SchedulePoolRelease()
+        {
+            if (_releaseCoroutine != null || _runner == null)
+                return;
+
+            _releaseCoroutine = _runner.StartCoroutine(ReleaseFinishedSources());
+        }
+
+        private IEnumerator ReleaseFinishedSources()
+        {
+            while (HasBusySources())
+            {
+                ReleaseFinishedSourcesImmediate();
+                yield return null;
+            }
+
+            _releaseCoroutine = null;
+        }
+
+        private bool HasBusySources()
+        {
+            for (int i = 0; i < _pool.Count; i++)
+            {
+                if (_pool[i].Busy)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private void ReleaseFinishedSourcesImmediate()
+        {
+            for (int i = 0; i < _pool.Count; i++)
+            {
+                var pooled = _pool[i];
+                if (!pooled.Busy || IsSourceStillPlaying(pooled))
+                    continue;
+
+                ResetPooledSource(pooled);
+                pooled.Busy = false;
+            }
+        }
+
+        private static bool IsSourceStillPlaying(PooledAudioSource pooled)
+        {
+            if (pooled.UsesOneShot)
+                return Time.unscaledTime < pooled.OneShotReleaseTime && pooled.Source.isPlaying;
+
+            return pooled.Source.loop || pooled.Source.isPlaying;
+        }
+
+        private void ConfigureOneShot(PooledAudioSource pooled, AudioEvent audioEvent, Vector3? position = null)
+        {
+            pooled.CurrentEvent = audioEvent;
+            pooled.Source.pitch = audioEvent.Pitch;
+            pooled.UsesOneShot = true;
+            pooled.OneShotReleaseTime = Time.unscaledTime +
+                audioEvent.Clip.length / Mathf.Max(0.01f, Mathf.Abs(audioEvent.Pitch));
+
+            if (position.HasValue)
+            {
+                pooled.Source.spatialBlend = 0f;
+                pooled.Source.transform.position = position.Value;
+            }
+            else
+            {
+                pooled.Source.spatialBlend = 0f;
+            }
         }
 
         public void Play(AudioEvent audioEvent)
@@ -156,14 +240,14 @@ namespace _Project.Scripts.Audio
             if (_categoryGroups.TryGetValue(audioEvent.Category, out var group))
                 pooled.Source.outputAudioMixerGroup = group;
 
-            // Применяем фоллбек громкости источника, если параметр микшера невалиден
+            //    ,    
             float categoryScalar = GetEffectiveCategoryScalar(audioEvent.Category);
             pooled.Source.volume = audioEvent.Volume * categoryScalar;
 
             pooled.Source.Play();
 
             if (!audioEvent.Loop)
-                _root.gameObject.AddComponent<AutoRelease>().Init(pooled);
+                SchedulePoolRelease();
         }
 
         public void PlayAt(AudioEvent audioEvent, Vector3 position)
@@ -180,14 +264,14 @@ namespace _Project.Scripts.Audio
             if (_categoryGroups.TryGetValue(audioEvent.Category, out var group))
                 pooled.Source.outputAudioMixerGroup = group;
 
-            // Для позиционных источников также учитываем категорию через фоллбек
+            //        
             float categoryScalar = GetEffectiveCategoryScalar(audioEvent.Category);
             pooled.Source.volume = audioEvent.Volume * categoryScalar;
 
             pooled.Source.Play();
 
             if (!audioEvent.Loop)
-                _root.gameObject.AddComponent<AutoRelease>().Init(pooled);
+                SchedulePoolRelease();
         }
 
         public void PlayOneShot(AudioEvent audioEvent)
@@ -199,18 +283,16 @@ namespace _Project.Scripts.Audio
                 return;
 
             var pooled = GetFree();
-            pooled.CurrentEvent = audioEvent;
-            pooled.Source.pitch = audioEvent.Pitch;
-            pooled.Source.spatialBlend = 0;
+            ConfigureOneShot(pooled, audioEvent);
 
             if (_categoryGroups.TryGetValue(audioEvent.Category, out var group))
                 pooled.Source.outputAudioMixerGroup = group;
 
-            // Фоллбек: множим громкость клипа на категорию
+            // :     
             float categoryScalar = GetEffectiveCategoryScalar(audioEvent.Category);
             pooled.Source.PlayOneShot(audioEvent.Clip, audioEvent.Volume * categoryScalar);
 
-            _root.gameObject.AddComponent<AutoRelease>().Init(pooled, true);
+            SchedulePoolRelease();
         }
 
         public void PlayOneShot(AudioEvent audioEvent, Vector3 position)
@@ -222,22 +304,16 @@ namespace _Project.Scripts.Audio
                 return;
 
             var pooled = GetFree();
-            pooled.CurrentEvent = audioEvent;
-            pooled.Source.pitch = audioEvent.Pitch;
-            pooled.Source.spatialBlend = 0;
-
-            pooled.Source.transform.position = position;
+            ConfigureOneShot(pooled, audioEvent, position);
 
             if (_categoryGroups.TryGetValue(audioEvent.Category, out var group))
                 pooled.Source.outputAudioMixerGroup = group;
 
-            // Фоллбек: множим громкость клипа на категорию
+            // :     
             float categoryScalar = GetEffectiveCategoryScalar(audioEvent.Category);
             pooled.Source.PlayOneShot(audioEvent.Clip, audioEvent.Volume * categoryScalar);
 
-            _root.gameObject.AddComponent<AutoRelease>().Init(pooled, true);
-
-            Debug.Log($"Play one shot settings.\nClip: {audioEvent.Clip.name}\nVolume: {pooled.Source.volume}\n Pitch: {pooled.Source.pitch} \n Spatial Blend: {pooled.Source.spatialBlend}\n Position: {position}");
+            SchedulePoolRelease();
         }
 
         private bool IsMutedOrZero(AudioCategory category)
@@ -263,8 +339,8 @@ namespace _Project.Scripts.Audio
                 if (p.Busy && p.CurrentEvent == audioEvent)
                 {
                     p.Source.Stop();
+                    ResetPooledSource(p);
                     p.Busy = false;
-                    p.CurrentEvent = null;
                 }
             }
         }
@@ -284,8 +360,8 @@ namespace _Project.Scripts.Audio
                 if (p.Busy && p.CurrentEvent != null && p.CurrentEvent.Category == category)
                 {
                     p.Source.Stop();
+                    ResetPooledSource(p);
                     p.Busy = false;
-                    p.CurrentEvent = null;
                 }
             }
         }
@@ -321,7 +397,7 @@ namespace _Project.Scripts.Audio
             return _categoryMuted.TryGetValue(category, out var muted) && muted;
         }
 
-        // Применение громкости через микшер (с учетом mute)
+        //     (  mute)
         private void ApplyMixerVolume(AudioCategory category)
         {
             if (_mixer == null) return;
@@ -337,21 +413,21 @@ namespace _Project.Scripts.Audio
             _mixerParamValid[category] = ok;
 
             if (!ok)
-                Debug.LogWarning($"[AudioService] Не удалось установить значение параметра '{paramName}' (категория {category}). Проверьте, что параметр Exposed и доступен в билде. Будет использован фоллбек громкости источника.");
+                Debug.LogWarning($"[AudioService]      '{paramName}' ( {category}). ,   Exposed    .     .");
         }
 
-        // Возвращает линейный коэффициент категории, если параметр микшера недоступен.
+        //    ,    .
         private float GetEffectiveCategoryScalar(AudioCategory category)
         {
             bool muted = _categoryMuted.TryGetValue(category, out var m) && m;
             float baseLinear = _categoryLinearVolumes.TryGetValue(category, out var v) ? v : 1f;
             float effectiveLinear = muted ? 0f : baseLinear;
 
-            // Если параметр микшера валиден — источниковую громкость не трогаем (вернем 1f)
+            //          ( 1f)
             if (_mixer != null && _mixerParamValid.TryGetValue(category, out var valid) && valid)
                 return 1f;
 
-            // Иначе — применим коэффициент категории на уровне источника
+            //        
             return effectiveLinear;
         }
 
@@ -360,38 +436,6 @@ namespace _Project.Scripts.Audio
             if (linear <= 0.0001f)
                 return -80f; // mute
             return Mathf.Log10(linear) * 20f;
-        }
-
-        private class AutoRelease : MonoBehaviour
-        {
-            private PooledAudioSource _pooled;
-            private bool _playOneShot;
-
-            public void Init(PooledAudioSource pooled, bool playOneShot = false)
-            {
-                _pooled = pooled;
-                _playOneShot = playOneShot;
-            }
-
-            private void Update()
-            {
-                if (_pooled == null)
-                {
-                    Destroy(this);
-                    return;
-                }
-
-                bool finished = _playOneShot
-                    ? !_pooled.Source.isPlaying
-                    : (!_pooled.Source.loop && !_pooled.Source.isPlaying);
-
-                if (finished)
-                {
-                    _pooled.Busy = false;
-                    _pooled.CurrentEvent = null;
-                    Destroy(this);
-                }
-            }
         }
     }
 }

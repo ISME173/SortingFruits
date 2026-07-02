@@ -7,6 +7,8 @@ namespace _Project.Scripts.Audio
         public AudioSource Source;
         public AudioEvent CurrentEvent;
         public bool Busy;
+        public bool UsesOneShot;
+        public float OneShotReleaseTime;
 
         public void Configure(AudioEvent audioEvent, Vector3? position = null)
         {

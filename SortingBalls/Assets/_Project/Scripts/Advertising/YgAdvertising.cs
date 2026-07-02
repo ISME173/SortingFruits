@@ -62,14 +62,14 @@ namespace _Project.Scripts.Advertising
         {
             if (_canShowInterstitial == false)
             {
-                Debug.LogWarning("Interstitial ad is on cooldown");
+                //Debug.LogWarning("Interstitial ad is on cooldown");
                 onError?.Invoke();
                 return;
             }
 
             if (_interstitial == null)
             {
-                Debug.LogError("Interstitial ad is not ready yet");
+                //Debug.LogError("Interstitial ad is not ready yet");
                 onError?.Invoke();
                 return;
             }
@@ -87,7 +87,7 @@ namespace _Project.Scripts.Advertising
         {
             if (_rewardedAd == null)
             {
-                Debug.LogError("Rewarded ad is not ready yet");
+                //Debug.LogError("Rewarded ad is not ready yet");
                 onError?.Invoke();
                 return;
             }
@@ -172,23 +172,23 @@ namespace _Project.Scripts.Advertising
 
         private void HandleRewardedAdFailedToLoad(AdFailedToLoadEventArgs args)
         {
-            Debug.LogError($"Rewarded ad failed to load: {args.Message}");
+            //Debug.LogError($"Rewarded ad failed to load: {args.Message}");
             RequestRewardedAd();
         }
 
         private void HandleRewardedAdClicked(object sender, EventArgs args)
         {
-            Debug.Log("Rewarded ad clicked");
+            //Debug.Log("Rewarded ad clicked");
         }
 
         private void HandleRewardedAdShown(object sender, EventArgs args)
         {
-            Debug.Log("Rewarded ad shown");
+            //Debug.Log("Rewarded ad shown");
         }
 
         private void HandleRewardedAdDismissed(object sender, EventArgs args)
         {
-            Debug.Log("Rewarded ad dismissed");
+            //Debug.Log("Rewarded ad dismissed");
 
             UnsubscribeRewardedAdEvents();
             _rewardedAd.Destroy();
@@ -199,12 +199,12 @@ namespace _Project.Scripts.Advertising
 
         private void HandleRewardedAdImpression(object sender, ImpressionData impressionData)
         {
-            Debug.Log("Rewarded ad impression");
+            //Debug.Log("Rewarded ad impression");
         }
 
         private void HandleRewardedAdRewarded(object sender, Reward args)
         {
-            Debug.Log("Rewarded ad rewarded");
+            //Debug.Log("Rewarded ad rewarded");
 
             InvokeAndClear(_onRewardedAdSuccessCallbacks);
             _onRewardedAdErrorCallbacks.Clear();
@@ -212,7 +212,7 @@ namespace _Project.Scripts.Advertising
 
         private void HandleRewardedAdFailedToShow(object sender, AdFailureEventArgs args)
         {
-            Debug.LogError($"Rewarded ad failed to show: {args.Message}");
+            //Debug.LogError($"Rewarded ad failed to show: {args.Message}");
 
             InvokeAndClear(_onRewardedAdErrorCallbacks);
             _onRewardedAdSuccessCallbacks.Clear();
@@ -237,18 +237,18 @@ namespace _Project.Scripts.Advertising
 
         private void HandleInterstitialAdFailedToLoad(AdFailedToLoadEventArgs args)
         {
-            Debug.LogError($"Interstitial ad failed to load: {args.Message}");
+            //Debug.LogError($"Interstitial ad failed to load: {args.Message}");
             RequestInterstitialAd();
         }
 
         private void HandleInterstitialAdClicked(object sender, EventArgs args)
         {
-            Debug.Log("Interstitial ad clicked");
+            //Debug.Log("Interstitial ad clicked");
         }
 
         private void HandleInterstitialAdShown(object sender, EventArgs args)
         {
-            Debug.Log("Interstitial ad shown");
+            //Debug.Log("Interstitial ad shown");
 
             _canShowInterstitial = false;
             Timer.After(_interstitialReloadDelaySeconds, () => _canShowInterstitial = true);
@@ -256,7 +256,7 @@ namespace _Project.Scripts.Advertising
 
         private void HandleInterstitialAdDismissed(object sender, EventArgs args)
         {
-            Debug.Log("Interstitial ad dismissed");
+            //Debug.Log("Interstitial ad dismissed");
 
             InvokeAndClear(_onInterstitialAdSuccessCallbacks);
             _onInterstitialAdErrorCallbacks.Clear();
@@ -270,12 +270,12 @@ namespace _Project.Scripts.Advertising
 
         private void HandleInterstitialAdImpression(object sender, ImpressionData impressionData)
         {
-            Debug.Log("Interstitial ad impression");
+            //Debug.Log("Interstitial ad impression");
         }
 
         private void HandleInterstitialAdFailedToShow(object sender, AdFailureEventArgs args)
         {
-            Debug.LogError($"Interstitial ad failed to show: {args.Message}");
+            //Debug.LogError($"Interstitial ad failed to show: {args.Message}");
 
             InvokeAndClear(_onInterstitialAdErrorCallbacks);
             _onInterstitialAdSuccessCallbacks.Clear();

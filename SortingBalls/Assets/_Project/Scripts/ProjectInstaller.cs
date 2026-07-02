@@ -13,6 +13,11 @@ namespace _Project.Scripts
 
         public void InstallBindings(ContainerBuilder containerBuilder)
         {
+#if !UNITY_EDITOR
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = 60;
+            Screen.sleepTimeout = SleepTimeout.NeverSleep;
+#endif
             containerBuilder.AddSingleton(new PlayerPrefsSaves(), typeof(ISaves));
 
             var advertising = new YgAdvertising(_interstitialAdvShowDelaySeconds);
