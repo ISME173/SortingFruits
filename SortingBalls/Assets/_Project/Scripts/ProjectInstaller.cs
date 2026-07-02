@@ -15,7 +15,7 @@ namespace _Project.Scripts
         {
             containerBuilder.AddSingleton(new PlayerPrefsSaves(), typeof(ISaves));
 
-            var advertising = new DevAdvertising(_interstitialAdvShowDelaySeconds);
+            var advertising = new YgAdvertising(_interstitialAdvShowDelaySeconds);
             advertising.Initialize();
             containerBuilder.AddSingleton(advertising, typeof(IAdvertising));
 

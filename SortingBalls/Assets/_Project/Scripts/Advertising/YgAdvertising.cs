@@ -9,8 +9,8 @@ namespace _Project.Scripts.Advertising
 {
     public class YgAdvertising : IAdvertising
     {
-        private const string RewardedAdUnitId = "R-M-19507938-2";
-        private const string InterstitialAdUnitId = "R-M-19507938-1";
+        private const string RewardedAdUnitId = "ID R-M-19507938-2";
+        private const string InterstitialAdUnitId = "ID R-M-19507938-1";
 
         private readonly float _interstitialReloadDelaySeconds;
 

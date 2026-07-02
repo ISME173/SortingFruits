@@ -259,7 +259,7 @@ TextureImporter:
     resizeAlgorithm: 0
     textureFormat: -1
     textureCompression: 2
-    compressionQuality: 10
+    compressionQuality: 5
     crunchedCompression: 1
     allowsAlphaSplitting: 0
     overridden: 0
