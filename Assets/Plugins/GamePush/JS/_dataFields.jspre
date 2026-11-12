@@ -1,4 +1,4 @@
-const dataProjectId = '29664';
-const dataPublicToken = 'dvEkNRAkrc6WbAbNeQJJNr2BB50kVjja';
+const dataProjectId = '32714';
+const dataPublicToken = 'cdrasYXZTMkZF0VjgDzQdgAYdNkohCDH';
 const showPreloaderAd = 'False';
 const gpFullLogs = true;
