@@ -1,3 +1,5 @@
+using System;
+
 namespace _Project.Scripts.Saves
 {
     public interface ISaves
