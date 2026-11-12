@@ -11,6 +11,15 @@
       },
       "hash": "b651c5866fe0e3fba065ce2e56dfdfcd59d3d109"
     },
+    "com.boxqkrtm.ide.cursor": {
+      "version": "https://github.com/boxqkrtm/com.unity.ide.cursor.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.test-framework": "1.1.9"
+      },
+      "hash": "fd8ff1fb700caf062eb5cce364c1d0a85f99ebe6"
+    },
     "com.gustavopsantos.reflex": {
       "version": "https://github.com/gustavopsantos/reflex.git?path=/Assets/Reflex/#13.0.3",
       "depth": 0,
