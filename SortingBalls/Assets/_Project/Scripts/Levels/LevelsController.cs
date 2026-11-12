@@ -39,6 +39,7 @@ namespace _Project.Scripts.Levels
             _levelCreator.OnLevelStateChanged += OnLevelStateChanged;
 
             LevelsView.UpdateView(_levelCreator.LevelsCount, 1, 0);
+            _levelCreator.NotifyLevelStates();
         }
 
         public void Dispose()

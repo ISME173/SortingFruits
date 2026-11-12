@@ -43,6 +43,8 @@ namespace _Project.Scripts.FlaskSequence
         private IAudioService _audioService;
         private IGameEvents _gameEvents;
         private int _currentLevelIndex = -1;
+        private int _frontierLevelIndex = -1;
+        private int _levelLoadVersion;
         private bool _allLevelsLoaded = false;
         private bool _forceReloadGeneration;
         private int _currentSpawnFlasksRow = 1;
@@ -91,11 +93,10 @@ namespace _Project.Scripts.FlaskSequence
             if (_saves == null)
                 return;
 
-            if (_currentLevelIndex < 0 || _currentLevelIndex >= _loadedLevelKeys.Count || _currentLevelIndex >= AllLevels.Count)
+            string currentKey = GetOriginalKey(_frontierLevelIndex);
+            LevelData currentLevel = FindLevelData(_frontierLevelIndex);
+            if (string.IsNullOrEmpty(currentKey) || currentLevel == null)
                 return;
-
-            string currentKey = _loadedLevelKeys[_currentLevelIndex];
-            LevelData currentLevel = AllLevels[_currentLevelIndex];
 
             try
             {
@@ -120,17 +121,15 @@ namespace _Project.Scripts.FlaskSequence
                     }
                 }
 
-                // Сохраняем только текущий уровень
-                if (!string.IsNullOrEmpty(currentKey) && currentLevel != null)
+                // Сохраняем только крайний открытый уровень. Повтор старых уровней его не подменяет.
+                try
                 {
-                    try
-                    {
-                        _saves.SetObject(currentKey, currentLevel, prettyPrint: true);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.LogWarning($"[LevelCreator] Не удалось сохранить текущий уровень '{currentKey}' в ISaves: {ex.Message}");
-                    }
+                    _saves.SetObject(currentKey, currentLevel, prettyPrint: true);
+                    _saves.SetString(SaveKey_CurrentLevel, currentKey);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[LevelCreator] Не удалось сохранить текущий уровень '{currentKey}' в ISaves: {ex.Message}");
                 }
 
                 _saves.Save();
@@ -196,6 +195,7 @@ namespace _Project.Scripts.FlaskSequence
                 _loadedLevelKeys.Add(firstKey);
 
                 _currentLevelIndex = level.LevelIndex - 1;
+                _frontierLevelIndex = _currentLevelIndex;
 
                 SetLevelStateByIndex(_currentLevelIndex, LevelState.Opened);
                 CreateLevelView(level);
@@ -343,7 +343,7 @@ namespace _Project.Scripts.FlaskSequence
             Addressables.Release(handle);
 
             // Раньше тут для каждого загруженного уровня делалась запись в ISaves — это приводило к множеству операций записи.
-            // Теперь мы НЕ сохраняем все загруженные уровни автоматически. Сохраняем только текущий открытый уровень через SaveLevels / SaveLevelKey.
+            // Теперь мы НЕ сохраняем все загруженные уровни автоматически. Сохраняем только крайний открытый уровень через SaveLevels.
             return result;
         }
 
@@ -371,49 +371,201 @@ namespace _Project.Scripts.FlaskSequence
         [ContextMenu("LevelsControll/LoadNextLevel")]
         public void LoadNextLevel()
         {
-            int nextIndex = _currentLevelIndex + 1;
-            if (nextIndex >= AllLevels.Count)
+            if (_frontierLevelIndex < 0)
             {
-                Debug.LogWarning(!_allLevelsLoaded
-                    ? "[LevelCreator] Следующий уровень ещё не загружен."
-                    : "[LevelCreator] Нет следующего уровня.");
+                Debug.LogWarning("[LevelCreator] Уровни ещё загружаются.");
                 return;
             }
 
-            _currentLevelIndex = nextIndex;
-            SetLevelStateByIndex(_currentLevelIndex, LevelState.Opened);
+            int nextIndex = _currentLevelIndex + 1;
+            if (nextIndex < 0 || nextIndex >= LevelsCount)
+            {
+                Debug.LogWarning("[LevelCreator] Нет следующего уровня.");
+                return;
+            }
 
-            CreateLevelView(AllLevels.Find(x => x.LevelIndex - 1 == _currentLevelIndex));
+            LevelData loaded = FindLevelData(nextIndex);
+            if (loaded != null)
+            {
+                ShowLevel(nextIndex, loaded, advanceFrontier: true);
+                return;
+            }
 
-            // Сохраняем выбранный текущий уровень
-            SaveCurrentLevelKey();
+            if (!_allLevelsLoaded && (_frontierLevelIndex < 0 || nextIndex >= _frontierLevelIndex))
+            {
+                Debug.LogWarning("[LevelCreator] Следующий уровень ещё не загружен.");
+                return;
+            }
+
+            _ = LoadAndShowAsync(nextIndex, advanceFrontier: true);
         }
 
         [ContextMenu("LevelsControll/ReloadCurrentLevel")]
         public void ReloadCurrentLevel()
         {
-            if (_currentLevelIndex < 0 || _currentLevelIndex >= AllLevels.Count)
+            _levelLoadVersion++;
+
+            LevelData level = FindLevelData(_currentLevelIndex);
+            if (level == null)
             {
                 Debug.LogWarning("[LevelCreator] Текущий индекс уровня некорректен.");
                 return;
             }
-            CreateLevelView(AllLevels.Find(x => x.LevelIndex - 1 == _currentLevelIndex));
+
+            CreateLevelView(level);
         }
 
         public void LoadLevelByIndex(int index)
         {
-            if (index < 0 || index >= AllLevels.Count)
+            if (!CanPlayLevel(index))
+                return;
+
+            LevelData loaded = FindLevelData(index);
+            if (loaded != null)
             {
-                Debug.LogWarning($"[LevelCreator] Индекс {index} вне диапазона загруженных уровней.");
+                ShowLevel(index, loaded, advanceFrontier: false);
                 return;
             }
 
+            _ = LoadAndShowAsync(index, advanceFrontier: false);
+        }
+
+        private async Task LoadAndShowAsync(int index, bool advanceFrontier)
+        {
+            int version = ++_levelLoadVersion;
+
+            try
+            {
+                LevelData level = await EnsureLevelDataAsync(index);
+                if (level == null || version != _levelLoadVersion)
+                {
+                    if (level == null)
+                        Debug.LogWarning($"[LevelCreator] Не удалось загрузить уровень {index + 1}.");
+                    return;
+                }
+
+                ShowLevel(index, level, advanceFrontier);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[LevelCreator] Ошибка загрузки уровня {index + 1}: {ex.Message}");
+            }
+        }
+
+        private void ShowLevel(int index, LevelData level, bool advanceFrontier)
+        {
+            if (level == null)
+                return;
+
+            // Отменяет загрузку, которая ещё не успела показать уровень.
+            _levelLoadVersion++;
+
+            if (advanceFrontier && index > _frontierLevelIndex)
+                _frontierLevelIndex = index;
+
             _currentLevelIndex = index;
 
-            CreateLevelView(AllLevels[_currentLevelIndex]);
+            bool isReplay = level.LevelState == LevelState.Completed
+                || (_frontierLevelIndex >= 0 && index < _frontierLevelIndex);
+            if (isReplay)
+            {
+                CreateLevelView(level);
+                return;
+            }
 
-            // Сохраняем выбранный текущий уровень
-            SaveCurrentLevelKey();
+            SetLevelStateByIndex(index, LevelState.Opened);
+            CreateLevelView(level);
+            SaveFrontierKey();
+        }
+
+        private bool CanPlayLevel(int index)
+        {
+            if (_frontierLevelIndex < 0)
+            {
+                Debug.LogWarning("[LevelCreator] Уровни ещё загружаются.");
+                return false;
+            }
+
+            if (_generationSettings == null || index < 0 || index >= LevelsCount)
+            {
+                Debug.LogWarning($"[LevelCreator] Индекс {index} вне диапазона уровней.");
+                return false;
+            }
+
+            if (index > _frontierLevelIndex)
+            {
+                Debug.LogWarning($"[LevelCreator] Уровень {index + 1} ещё закрыт.");
+                return false;
+            }
+
+            return true;
+        }
+
+        public void NotifyLevelStates()
+        {
+            if (_frontierLevelIndex < 0 || LevelsCount <= 0)
+                return;
+
+            for (int i = 0; i < LevelsCount; i++)
+            {
+                LevelState state;
+                if (i < _frontierLevelIndex)
+                    state = LevelState.Completed;
+                else if (i == _frontierLevelIndex)
+                    state = LevelState.Opened;
+                else
+                    state = LevelState.Locked;
+
+                OnLevelStateChanged?.Invoke(i, state);
+            }
+        }
+
+        private async Task<LevelData> EnsureLevelDataAsync(int originalIndex)
+        {
+            LevelData existing = FindLevelData(originalIndex);
+            if (existing != null)
+                return existing;
+
+            string key = GetOriginalKey(originalIndex);
+            if (string.IsNullOrEmpty(key))
+                return null;
+
+            LevelData level = await LoadLevelByKey(key);
+            if (level == null)
+                return null;
+
+            existing = FindLevelData(originalIndex);
+            if (existing != null)
+                return existing;
+
+            if (originalIndex < _frontierLevelIndex)
+                level.LevelState = LevelState.Completed;
+            else if (originalIndex == _frontierLevelIndex)
+                level.LevelState = LevelState.Opened;
+            else
+                level.LevelState = LevelState.Locked;
+
+            AllLevels.Add(level);
+            if (!_loadedLevelKeys.Contains(key))
+                _loadedLevelKeys.Add(key);
+
+            return level;
+        }
+
+        private LevelData FindLevelData(int originalIndex)
+        {
+            return AllLevels.FirstOrDefault(level => level != null && level.LevelIndex - 1 == originalIndex);
+        }
+
+        private string GetOriginalKey(int originalIndex)
+        {
+            if (_generationSettings == null || _generationSettings.GeneratedLevelKeys == null)
+                return null;
+
+            if (originalIndex < 0 || originalIndex >= _generationSettings.GeneratedLevelKeys.Count)
+                return null;
+
+            return _generationSettings.GeneratedLevelKeys[originalIndex];
         }
 
         #endregion
@@ -681,12 +833,19 @@ namespace _Project.Scripts.FlaskSequence
 
                 void OnLevelCompleted()
                 {
-                    SetLevelStateByIndex(_currentLevelIndex, LevelState.Completed);
+                    LevelData completedLevel = FindLevelData(_currentLevelIndex);
+                    bool advancesProgress = _frontierLevelIndex < 0 || _currentLevelIndex >= _frontierLevelIndex;
 
-                    LevelCompleted?.Invoke(AllLevels[_currentLevelIndex]);
+                    if (advancesProgress)
+                        SetLevelStateByIndex(_currentLevelIndex, LevelState.Completed);
 
-                    // Перед тем как записать новый текущий ключ, удалим предыдущую сохранённую запись уровня (чтобы в ISaves оставался только новый).
-                    SaveLevelKey(_currentLevelIndex + 1);
+                    if (completedLevel != null)
+                        LevelCompleted?.Invoke(completedLevel);
+                    else
+                        Debug.LogWarning($"[LevelCreator] Не найдены данные завершённого уровня {_currentLevelIndex + 1}.");
+
+                    if (advancesProgress)
+                        AdvanceFrontier(_currentLevelIndex + 1);
                 }
             }
         }
@@ -722,20 +881,21 @@ namespace _Project.Scripts.FlaskSequence
 
         private void SaveCurrentLevelKey()
         {
+            SaveFrontierKey();
+        }
+
+        private void SaveFrontierKey()
+        {
             if (_saves == null)
                 return;
 
-            if (_currentLevelIndex < 0 || _currentLevelIndex >= _loadedLevelKeys.Count)
+            string key = GetOriginalKey(_frontierLevelIndex);
+            if (string.IsNullOrEmpty(key))
                 return;
 
             try
             {
-                // _currentLevelIndex — индекс в AllLevels/_loadedLevelKeys
-                string key = _loadedLevelKeys[_currentLevelIndex];
-                if (!string.IsNullOrEmpty(key))
-                {
-                    _saves.SetString(SaveKey_CurrentLevel, key);
-                }
+                _saves.SetString(SaveKey_CurrentLevel, key);
             }
             catch (Exception ex)
             {
@@ -743,47 +903,32 @@ namespace _Project.Scripts.FlaskSequence
             }
         }
 
-        private void SaveLevelKey(int levelIndex)
+        private void AdvanceFrontier(int levelIndex)
         {
-            if (_saves == null)
+            if (levelIndex < 0 || levelIndex >= LevelsCount || levelIndex <= _frontierLevelIndex)
                 return;
 
-            // Здесь levelIndex трактуется как индекс в AllLevels/_loadedLevelKeys
-            if (levelIndex < 0 || levelIndex >= _loadedLevelKeys.Count)
+            string previousKey = GetOriginalKey(_frontierLevelIndex);
+            _frontierLevelIndex = levelIndex;
+
+            if (_saves == null)
                 return;
 
             try
             {
-                string newKey = _loadedLevelKeys[levelIndex];
-                if (string.IsNullOrEmpty(newKey))
-                    return;
-
-                // Удалим предыдущую сохранённую запись уровня (если была), чтобы в ISaves оставался только последний открытый.
-                try
+                if (!string.IsNullOrEmpty(previousKey))
                 {
-                    if (_saves.HasKey(SaveKey_CurrentLevel))
+                    try
                     {
-                        string prevKey = _saves.GetString(SaveKey_CurrentLevel);
-                        if (!string.IsNullOrEmpty(prevKey) && prevKey != newKey)
-                        {
-                            try
-                            {
-                                _saves.SetObject<LevelData>(prevKey, null, prettyPrint: false);
-                            }
-                            catch (Exception ex)
-                            {
-                                Debug.LogWarning($"[LevelCreator] Не удалось удалить предыдущую запись уровня '{prevKey}': {ex.Message}");
-                            }
-                        }
+                        _saves.SetObject<LevelData>(previousKey, null, prettyPrint: false);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning($"[LevelCreator] Не удалось удалить предыдущую запись уровня '{previousKey}': {ex.Message}");
                     }
                 }
-                catch (Exception ex)
-                {
-                    Debug.LogWarning($"[LevelCreator] Ошибка при попытке удалить предыдущий ключ уровня: {ex.Message}");
-                }
 
-                // Установим новый текущий ключ и сохраним
-                _saves.SetString(SaveKey_CurrentLevel, newKey);
+                SaveFrontierKey();
                 _saves.Save();
             }
             catch (Exception ex)

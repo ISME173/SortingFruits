@@ -43,6 +43,12 @@ namespace _Project.Scripts.Levels
         public void Show()
         {
             gameObject.SetActive(true);
+
+            // ѕересчЄт после смены scale у текущего уровн€, чтобы слот осталс€ в своей €чейке.
+            Canvas.ForceUpdateCanvases();
+            if (_parentForLevelButtons != null)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(_parentForLevelButtons);
+
             _levelsViewAnimation.Show(null);
         }
 
@@ -87,9 +93,14 @@ namespace _Project.Scripts.Levels
                 return;
             }
 
-			//Debug.Log($"Open level: {levelNumber}");
+            int openedIndex = levelNumber - 1;
+            for (int i = 0; i < LevelButtons.Count; i++)
+            {
+                if (i != openedIndex)
+                    LevelButtons[i].SetHighlighted(false);
+            }
 
-			LevelButtons[levelNumber - 1].Open();
+            LevelButtons[openedIndex].Open();
         }
 
         public void LockLevel(int levelNumber)
