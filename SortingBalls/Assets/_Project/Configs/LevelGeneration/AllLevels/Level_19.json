@@ -10,33 +10,33 @@
     ],
     [
       "Apple",
-      "Pear",
-      "Orange",
-      "Pear"
-    ],
-    [
-      "Orange",
+      "strawberry",
       "Apple",
-      "Banana",
       "Grape"
     ],
     [
       "strawberry",
-      "Pear",
-      "Apple",
-      "Grape"
-    ],
-    [
+      "Banana",
       "Grape",
-      "strawberry",
-      "Banana",
       "strawberry"
     ],
     [
-      "strawberry",
-      "Apple",
+      "Banana",
       "Orange",
-      "Banana"
+      "Pear",
+      "Orange"
+    ],
+    [
+      "strawberry",
+      "Grape",
+      "Orange",
+      "Apple"
+    ],
+    [
+      "Banana",
+      "Pear",
+      "Apple",
+      "Pear"
     ],
     [],
     []

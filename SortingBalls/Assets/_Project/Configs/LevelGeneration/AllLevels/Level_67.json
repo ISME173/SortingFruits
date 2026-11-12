@@ -4,45 +4,39 @@
   "Flasks": [
     [
       "Apple",
+      "Pear",
+      "strawberry",
+      "Apple"
+    ],
+    [
       "Apple",
-      "Banana",
+      "strawberry",
+      "Orange",
       "Banana"
     ],
     [
-      "Pear",
+      "Banana",
       "Orange",
       "Pear",
       "strawberry"
     ],
     [
-      "Pear",
-      "Pear",
-      "Apple",
-      "strawberry"
-    ],
-    [
       "strawberry",
-      "Grape",
-      "Grape",
-      "Banana"
-    ],
-    [
-      "Grape",
-      "blueberry",
-      "strawberry",
-      "Orange"
-    ],
-    [
-      "Grape",
-      "blueberry",
+      "Banana",
       "Orange",
-      "Orange"
+      "Grape"
     ],
     [
-      "blueberry",
       "Banana",
       "Apple",
-      "blueberry"
+      "Grape",
+      "Grape"
+    ],
+    [
+      "Grape",
+      "Orange",
+      "Pear",
+      "Pear"
     ],
     [],
     []

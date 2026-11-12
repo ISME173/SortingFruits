@@ -6,25 +6,25 @@
       "Banana",
       "Banana",
       "Pear",
-      "Orange"
+      "Pear"
     ],
     [
       "Orange",
-      "Apple",
-      "Orange",
-      "Apple"
-    ],
-    [
       "Orange",
       "Banana",
-      "Pear",
-      "Banana"
+      "Pear"
     ],
     [
-      "Pear",
-      "Pear",
+      "Banana",
+      "Orange",
       "Apple",
-      "Apple"
+      "Pear"
+    ],
+    [
+      "Apple",
+      "Apple",
+      "Apple",
+      "Orange"
     ],
     []
   ],
