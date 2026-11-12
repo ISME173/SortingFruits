@@ -11,7 +11,7 @@ using PlayerPrefs = UnityEngine.PlayerPrefs;
 
 namespace _Project.Scripts.Saves
 {
-    public class GamepushSDK : ISaves
+    public class GamepushSaves : ISaves
     {
         private const string TrueKey = "true", FalseKey = "false";
         private const string BlobKey = "game_saves";
@@ -22,7 +22,7 @@ namespace _Project.Scripts.Saves
         private bool _loaded;
         private bool _acceptCloud;
 
-        public GamepushSDK()
+        public GamepushSaves()
         {
             GP_Storage.OnGetValue += OnStorageGet;
         }
@@ -348,7 +348,7 @@ namespace _Project.Scripts.Saves
             }
             catch (Exception exception)
             {
-                Debug.LogWarning($"[GamepushSDK] Не удалось прочитать сохранения: {exception.Message}");
+                Debug.LogWarning($"[GamepushSaves] Не удалось прочитать сохранения: {exception.Message}");
                 return false;
             }
         }

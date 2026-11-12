@@ -13,7 +13,7 @@ namespace _Project.Scripts
 
         public void InstallBindings(ContainerBuilder containerBuilder)
         {
-            containerBuilder.AddSingleton(new GamepushSDK(), typeof(ISaves));
+            containerBuilder.AddSingleton(new GamepushSaves(), typeof(ISaves));
 
             var advertising = new DevAdvertising(_interstitialAdvShowDelaySeconds);
             advertising.Initialize();
